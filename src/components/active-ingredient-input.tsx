@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 interface ActiveIngredientInputProps {
   value: string
   onChange: (value: string) => void
+  onModeOfActionFetched?: (modeOfAction: string) => void
   label?: string
   placeholder?: string
   category?: string
@@ -18,6 +19,7 @@ interface ActiveIngredientInputProps {
 export default function ActiveIngredientInput({
   value,
   onChange,
+  onModeOfActionFetched,
   label = 'Active Ingredient',
   placeholder = 'Search active ingredients...',
   category
@@ -59,10 +61,23 @@ export default function ActiveIngredientInput({
     return () => clearTimeout(timeoutId)
   }, [searchTerm, category])
 
+  const fetchModeOfAction = async (ingredient: string) => {
+    try {
+      const response = await fetch(`/api/mode-of-action?ingredient=${encodeURIComponent(ingredient)}`)
+      const data = await response.json()
+      if (data.mode_of_action) {
+        onModeOfActionFetched?.(data.mode_of_action)
+      }
+    } catch (error) {
+      console.error('Error fetching mode of action:', error)
+    }
+  }
+
   const handleSelect = (suggestion: string) => {
     onChange(suggestion)
     setSearchTerm(suggestion)
     setOpen(false)
+    fetchModeOfAction(suggestion)
   }
 
   return (

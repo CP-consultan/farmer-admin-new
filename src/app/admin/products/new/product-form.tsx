@@ -13,7 +13,7 @@ import ActiveIngredientInput from '@/components/active-ingredient-input'
 interface ProductFormProps {
   pests: { id: string; scientific_name: string; common_name_en: string | null }[]
   crops: { id: string; name: string; common_name_en: string | null }[]
-  initialData?: any // for edit mode
+  initialData?: any
 }
 
 const pesticideSubTypes = [
@@ -200,8 +200,9 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       <ActiveIngredientInput
         value={activeIngredient}
         onChange={setActiveIngredient}
+        onModeOfActionFetched={setModeOfAction}
         label="Active Ingredient"
-        category={subType}   // 👈 filter by selected sub‑type
+        category={subType}
       />
 
       <div>
@@ -210,6 +211,25 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
           value={modeOfAction}
           onChange={(e) => setModeOfAction(e.target.value)}
           rows={2}
+          placeholder="Will auto‑populate when ingredient is selected"
+        />
+      </div>
+
+      <div>
+        <Label>Application Method</Label>
+        <Textarea
+          value={applicationMethod}
+          onChange={(e) => setApplicationMethod(e.target.value)}
+          rows={2}
+        />
+      </div>
+
+      <div>
+        <Label>Dosage</Label>
+        <Input
+          value={dosage}
+          onChange={(e) => setDosage(e.target.value)}
+          placeholder="e.g., 2 ml/L"
         />
       </div>
 
@@ -251,24 +271,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
             </div>
           ))}
         </div>
-      </div>
-
-      <div>
-        <Label>Application Method</Label>
-        <Textarea
-          value={applicationMethod}
-          onChange={(e) => setApplicationMethod(e.target.value)}
-          rows={2}
-        />
-      </div>
-
-      <div>
-        <Label>Dosage</Label>
-        <Input
-          value={dosage}
-          onChange={(e) => setDosage(e.target.value)}
-          placeholder="e.g., 2 ml/L"
-        />
       </div>
 
       <div>

@@ -1,4 +1,5 @@
-﻿import ImportForm from './import-form'
+﻿import { Suspense } from 'react'
+import ImportForm from './import-form'
 
 export default function ImportPage() {
   return (
@@ -35,7 +36,9 @@ export default function ImportPage() {
         </div>
       </div>
 
-      <ImportForm />
+      <Suspense fallback={<div>Loading...</div>}>
+        <ImportForm />
+      </Suspense>
     </div>
   )
 }

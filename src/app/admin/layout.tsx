@@ -1,89 +1,56 @@
-﻿import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
+﻿'use client'
+
+import { ReactNode } from 'react'
 import Link from 'next/link'
-import LogoutButton from './logout-button'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Home, Bug, FileText, Users, Upload } from 'lucide-react'
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+const navigation = [
+  { name: 'Dashboard', href: '/admin', icon: Home },
+  { name: 'Pests', href: '/admin/pests', icon: Bug },
+  { name: 'Advisories', href: '/admin/advisories', icon: FileText },
+  { name: 'Import CSV', href: '/admin/import', icon: Upload },
+]
 
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_admin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg max-w-md text-center">
-          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Access Denied</h1>
-          <p className="text-gray-600 dark:text-gray-300">You do not have administrator privileges.</p>
-        </div>
-      </div>
-    )
-  }
-
-  const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: '📊' },
-    { name: 'Pests', href: '/admin/pests', icon: '🐛' },
-    { name: 'Advisories', href: '/admin/advisories', icon: '📝' },
-    { name: 'Users', href: '/admin/users', icon: '👥' },
-    { name: 'Import CSV', href: '/admin/import', icon: '📤' },
-  ]
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <nav className="bg-white dark:bg-gray-800 shadow-md">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-800 dark:text-white">
-                Farmer's Assistant Admin
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <ThemeToggle />
-              <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>
-              <LogoutButton />
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto flex h-16 items-center px-4">
+          <Link 
+            href="/admin" 
+            className="font-bold text-xl bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent mr-6"
+          >
+            Farmer Admin
+          </Link>
+          <nav className="flex items-center space-x-1 flex-1">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200',
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </nav>
+          <ThemeToggle />
         </div>
-      </nav>
-
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          <aside className="w-64 shrink-0">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-              <nav className="space-y-1 p-4">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-300 transition-all duration-200 group"
-                  >
-                    <span className="mr-3 text-xl">{item.icon}</span>
-                    <span className="font-medium">{item.name}</span>
-                  </Link>
-                ))}
-              </nav>
-            </div>
-          </aside>
-
-          <main className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            {children}
-          </main>
-        </div>
-      </div>
+      </header>
+      <main className="container mx-auto p-6">{children}</main>
     </div>
   )
 }

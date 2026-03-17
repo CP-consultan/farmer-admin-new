@@ -4,7 +4,6 @@ import DashboardCharts from './dashboard-charts'
 export default async function AdminDashboard() {
   const supabase = await createClient()
 
-  // Fetch counts (with error handling)
   const { count: pestCount } = await supabase
     .from('pests')
     .select('*', { count: 'exact', head: true })
@@ -38,14 +37,12 @@ export default async function AdminDashboard() {
     user: userCount || 0,
   }
 
-  // Fetch recent pests
   const { data: recentPests } = await supabase
     .from('pests')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(5)
 
-  // Fetch recent advisories with pest info
   const { data: recentAdvisories } = await supabase
     .from('advisories')
     .select('*, pests(scientific_name)')

@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -13,10 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
 import { RefreshCw, ChevronUp, ChevronDown, Search } from 'lucide-react'
 import EditableCell from './editable-cell'
 import { DeleteButton } from './delete-button'
 import { motion, AnimatePresence } from 'framer-motion'
+import { cn } from '@/lib/utils'
 
 export default function PestsTable({ initialPests }: { initialPests: any[] }) {
   const router = useRouter()
@@ -28,12 +31,13 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
   const [refreshingId, setRefreshingId] = useState<string | null>(null)
   const [refreshingSciId, setRefreshingSciId] = useState<string | null>(null)
   const [statusMap, setStatusMap] = useState<Record<string, 'pending' | 'match' | 'mismatch'>>({})
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setPests(initialPests)
+    setLoading(false)
   }, [initialPests])
 
-  // Check names against GBIF on load
   useEffect(() => {
     const checkAllNames = async () => {
       for (const pest of pests) {
@@ -53,8 +57,8 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
         await new Promise(r => setTimeout(r, 300))
       }
     }
-    checkAllNames()
-  }, [pests])
+    if (!loading) checkAllNames()
+  }, [pests, loading])
 
   const filteredPests = pests.filter(pest =>
     pest.scientific_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -122,8 +126,6 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
         setStatusMap(prev => ({ ...prev, [id]: 'mismatch' }))
         return
       }
-      // For simplicity, we assume the API returns the corrected name as commonName? Actually our API returns commonName, not corrected scientific name.
-      // To correct scientific name, we need GBIF match. Let's keep it simple: just update common name and mark as match.
       updatePestLocally(id, { common_name_en: data.commonName })
       await supabase.from('pests').update({ common_name_en: data.commonName }).eq('id', id)
       setStatusMap(prev => ({ ...prev, [id]: 'match' }))
@@ -134,19 +136,40 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
     }
   }
 
-  const getRowClass = (id: string) => {
+  const getRowClass = (id: string, index: number) => {
+    const base = index % 2 === 0 ? 'bg-muted/20' : '' // subtle striping
     const status = statusMap[id]
-    if (status === 'match') return 'bg-green-50 dark:bg-green-900/20'
-    if (status === 'mismatch') return 'bg-red-50 dark:bg-red-900/20'
-    if (status === 'pending') return 'bg-yellow-50 dark:bg-yellow-900/20'
-    return ''
+    if (status === 'match') return cn(base, 'bg-green-50/50 dark:bg-green-900/10')
+    if (status === 'mismatch') return cn(base, 'bg-red-50/50 dark:bg-red-900/10')
+    if (status === 'pending') return cn(base, 'bg-yellow-50/50 dark:bg-yellow-900/10')
+    return base
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 flex-1" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <div className="rounded-md border">
+          <div className="p-4 space-y-3">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search pests..."
             value={search}
@@ -154,31 +177,32 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
             className="pl-10"
           />
         </div>
-        <span className="text-sm text-gray-500">{filteredPests.length} records</span>
+        <span className="text-sm text-muted-foreground">{filteredPests.length} records</span>
       </div>
 
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-16 text-center">Sr. No.</TableHead>
               <TableHead onClick={() => handleSort('scientific_name')} className="cursor-pointer">
-                Scientific Name {sortColumn === 'scientific_name' && (sortDirection === 'asc' ? '↑' : '↓')}
+                Scientific Name {sortColumn === 'scientific_name' && (sortDirection === 'asc' ? <ChevronUp className="inline h-4 w-4 ml-1" /> : <ChevronDown className="inline h-4 w-4 ml-1" />)}
               </TableHead>
               <TableHead onClick={() => handleSort('common_name_en')} className="cursor-pointer">
-                Common Name (En) {sortColumn === 'common_name_en' && (sortDirection === 'asc' ? '↑' : '↓')}
+                Common Name (En) {sortColumn === 'common_name_en' && (sortDirection === 'asc' ? <ChevronUp className="inline h-4 w-4 ml-1" /> : <ChevronDown className="inline h-4 w-4 ml-1" />)}
               </TableHead>
               <TableHead onClick={() => handleSort('common_name_ur')} className="cursor-pointer">
-                Common Name (Ur) {sortColumn === 'common_name_ur' && (sortDirection === 'asc' ? '↑' : '↓')}
+                Common Name (Ur) {sortColumn === 'common_name_ur' && (sortDirection === 'asc' ? <ChevronUp className="inline h-4 w-4 ml-1" /> : <ChevronDown className="inline h-4 w-4 ml-1" />)}
               </TableHead>
               <TableHead onClick={() => handleSort('category')} className="cursor-pointer">
-                Category {sortColumn === 'category' && (sortDirection === 'asc' ? '↑' : '↓')}
+                Category {sortColumn === 'category' && (sortDirection === 'asc' ? <ChevronUp className="inline h-4 w-4 ml-1" /> : <ChevronDown className="inline h-4 w-4 ml-1" />)}
               </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <AnimatePresence>
-              {sortedPests.map((pest) => (
+              {sortedPests.map((pest, index) => (
                 <motion.tr
                   key={pest.id}
                   layout
@@ -186,8 +210,11 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className={getRowClass(pest.id)}
+                  className={cn('hover:bg-muted/50 transition-colors', getRowClass(pest.id, index))}
                 >
+                  <TableCell className="text-center text-muted-foreground">
+                    {index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <EditableCell
@@ -199,6 +226,7 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
                         size="icon"
                         onClick={() => refreshScientificName(pest.id, pest.scientific_name)}
                         disabled={refreshingSciId === pest.id}
+                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
                       >
                         <RefreshCw className={`h-4 w-4 ${refreshingSciId === pest.id ? 'animate-spin' : ''}`} />
                       </Button>
@@ -215,6 +243,7 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
                         size="icon"
                         onClick={() => fetchAndUpdateCommonName(pest.id, pest.scientific_name)}
                         disabled={refreshingId === pest.id}
+                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
                       >
                         <RefreshCw className={`h-4 w-4 ${refreshingId === pest.id ? 'animate-spin' : ''}`} />
                       </Button>
@@ -235,13 +264,20 @@ export default function PestsTable({ initialPests }: { initialPests: any[] }) {
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" size="sm" asChild>
-                      <a href={`/admin/pests/${pest.id}/edit`}>Edit</a>
+                      <Link href={`/admin/pests/${pest.id}/edit`}>Edit</Link>
                     </Button>
                     <DeleteButton id={pest.id} />
                   </TableCell>
                 </motion.tr>
               ))}
             </AnimatePresence>
+            {sortedPests.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                  No pests found.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>

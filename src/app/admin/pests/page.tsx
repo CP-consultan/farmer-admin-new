@@ -1,5 +1,6 @@
 ﻿import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import PestsTable from './pests-table'
 
 export default async function PestsPage() {
@@ -13,8 +14,8 @@ export default async function PestsPage() {
           <h1 className="text-3xl font-bold">Pests Management</h1>
           <p className="text-muted-foreground mt-1">Manage your pest database</p>
         </div>
-        <Link href="/admin/pests/new" className="bg-primary text-primary-foreground px-4 py-2 rounded-md">
-          + Add New Pest
+        <Link href="/admin/pests/new">
+          <Button>+ Add New Pest</Button>
         </Link>
       </div>
       <PestsTable initialPests={pests || []} />

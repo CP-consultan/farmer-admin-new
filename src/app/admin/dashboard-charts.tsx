@@ -61,6 +61,7 @@ export default function DashboardCharts({ counts, recentPests, recentAdvisories 
         <StatCard title="Users" count={counts.user} href="/admin/users" icon="👤" />
       </div>
 
+      {/* Rest of your component (charts and recent activity) remains the same */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="overflow-hidden border-0 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">

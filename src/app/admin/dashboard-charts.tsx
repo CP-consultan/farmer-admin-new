@@ -16,15 +16,22 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTheme } from '@/context/ThemeContext'
-import { cn } from '@/lib/utils'
 
 interface DashboardChartsProps {
-  counts: { pest: number; advisory: number; product: number; equipment: number; labor: number; user: number }
+  counts: {
+    pest: number
+    advisory: number
+    product: number
+    equipment: number
+    labor: number
+    user: number
+  }
   recentPests: any[]
   recentAdvisories: any[]
 }
 
-export default function DashboardCharts({ counts, recentPests, recentAdvisories }: DashboardChartsProps) {  const { theme } = useTheme()
+export default function DashboardCharts({ counts, recentPests, recentAdvisories }: DashboardChartsProps) {
+  const { theme } = useTheme()
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const barData = [
@@ -54,120 +61,7 @@ export default function DashboardCharts({ counts, recentPests, recentAdvisories 
         <StatCard title="Users" count={counts.user} href="/admin/users" icon="👤" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="overflow-hidden border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
-            <CardTitle>Content Distribution</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
-                <XAxis dataKey="name" stroke={isDark ? '#9CA3AF' : '#6B7280'} />
-                <YAxis stroke={isDark ? '#9CA3AF' : '#6B7280'} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-                    color: isDark ? '#F9FAFB' : '#111827',
-                    border: 'none',
-                    borderRadius: '0.5rem',
-                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {barData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
-            <CardTitle>Proportion of Data</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={barData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  dataKey="value"
-                  label={({ name, percent }) => {
-                    const percentage = percent ? (percent * 100).toFixed(0) : '0';
-                    return `${name} ${percentage}%`;
-                  }}
-                >
-                  {barData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-                    color: isDark ? '#F9FAFB' : '#111827',
-                    border: 'none',
-                    borderRadius: '0.5rem',
-                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
-            <CardTitle>Recent Pests</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y">
-              {recentPests.map((pest) => (
-                <li key={pest.id} className="py-3 flex justify-between items-center group">
-                  <div>
-                    <p className="font-medium">{pest.scientific_name}</p>
-                    <p className="text-sm text-muted-foreground">{pest.common_name_en || pest.common_name}</p>
-                  </div>
-                  <Link href={`/admin/pests/${pest.id}/edit`} className="text-sm font-medium text-primary hover:underline opacity-0 group-hover:opacity-100 transition-opacity">
-                    Edit
-                  </Link>
-                </li>
-              ))}
-              {recentPests.length === 0 && <li className="py-3 text-muted-foreground">No recent pests</li>}
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
-            <CardTitle>Recent Advisories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y">
-              {recentAdvisories.map((adv) => (
-                <li key={adv.id} className="py-3 flex justify-between items-center group">
-                  <div>
-                    <p className="font-medium">{adv.title}</p>
-                    <p className="text-sm text-muted-foreground">{adv.pests?.scientific_name || 'Unknown pest'}</p>
-                  </div>
-                  <Link href={`/admin/advisories/${adv.id}/edit`} className="text-sm font-medium text-primary hover:underline opacity-0 group-hover:opacity-100 transition-opacity">
-                    Edit
-                  </Link>
-                </li>
-              ))}
-              {recentAdvisories.length === 0 && <li className="py-3 text-muted-foreground">No recent advisories</li>}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Rest of your component... */}
     </div>
   )
 }

@@ -2,17 +2,25 @@
 
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { Button } from '@/components/ui/button'
 
 export function DeleteButton({ id }: { id: string }) {
   const router = useRouter()
   const supabase = createClient()
 
   const handleDelete = async () => {
-    if (!confirm('Delete this product?')) return
-    const { error } = await supabase.from('products').delete().eq('id', id)
-    if (error) alert('Error: ' + error.message)
-    else router.refresh()
+    if (!confirm('Are you sure you want to delete this product?')) return
+    const { error } = await supabase.from('agrochemicals').delete().eq('id', id)
+    if (error) {
+      alert('Error deleting: ' + error.message)
+    } else {
+      router.refresh()
+    }
   }
 
-  return <button onClick={handleDelete} className="text-red-600">Delete</button>
+  return (
+    <Button onClick={handleDelete} variant="destructive" size="sm">
+      Delete
+    </Button>
+  )
 }

@@ -5,12 +5,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Home, Bug, FileText, Upload, Leaf, UserCircle } from 'lucide-react'
+import { Home, Bug, FileText, Upload, Leaf, UserCircle, Package } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: Home },
   { name: 'Pests', href: '/admin/pests', icon: Bug },
   { name: 'Advisories', href: '/admin/advisories', icon: FileText },
+  { name: 'Products', href: '/admin/products', icon: Package },
   { name: 'Import CSV', href: '/admin/import', icon: Upload },
 ]
 

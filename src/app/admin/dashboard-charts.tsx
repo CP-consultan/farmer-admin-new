@@ -18,11 +18,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTheme } from '@/context/ThemeContext'
 import { cn } from '@/lib/utils'
 
-export default function DashboardCharts({ counts, recentPests, recentAdvisories }: {
-  counts: any;
-  recentPests: any[];
-  recentAdvisories: any[];
-}) {
+interface DashboardChartsProps {
+  counts: {
+    pest: number
+    advisory: number
+    product: number
+    equipment: number
+    labor: number
+    user: number
+  }
+  recentPests: any[] // You can refine this type if you have a Pest interface
+  recentAdvisories: any[] // You can refine this type if you have an Advisory interface
+}
+
+export default function DashboardCharts({ counts, recentPests, recentAdvisories }: DashboardChartsProps) {
   const { theme } = useTheme()
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 

@@ -14,13 +14,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DeleteButton } from './delete-button'
+import { RefreshCw, Search } from 'lucide-react'
 import EditableCell from './editable-cell'
-import { Search } from 'lucide-react'
+import { DeleteButton } from './delete-button'
 
-export default function SimplePestsTable({ initialPests }: { initialPests: any[] }) {
+export default function PestsTable({ initialPests }: { initialPests: any[] }) {
   const [pests, setPests] = useState(initialPests)
   const [search, setSearch] = useState('')
+  const [refreshingId, setRefreshingId] = useState<string | null>(null) // new state for button loading
   const router = useRouter()
   const supabase = createClient()
 
@@ -38,6 +39,27 @@ export default function SimplePestsTable({ initialPests }: { initialPests: any[]
     if (error) {
       setPests(prev => prev.map(p => p.id === id ? original! : p))
       alert('Error: ' + error.message)
+    }
+  }
+
+  // New function: fetch common name from our API and update
+  const fetchAndUpdateCommonName = async (id: string, scientificName: string) => {
+    setRefreshingId(id)
+    try {
+      const res = await fetch(`/api/itis?name=${encodeURIComponent(scientificName)}`)
+      const data = await res.json()
+      if (res.ok && data.commonName) {
+        // Optimistically update local state
+        setPests(prev => prev.map(p => p.id === id ? { ...p, common_name_en: data.commonName } : p))
+        // Persist to database
+        await supabase.from('pests').update({ common_name_en: data.commonName }).eq('id', id)
+      } else {
+        alert('Could not fetch common name: ' + (data.error || 'Unknown error'))
+      }
+    } catch (err) {
+      alert('Network error while fetching common name')
+    } finally {
+      setRefreshingId(null)
     }
   }
 
@@ -79,10 +101,21 @@ export default function SimplePestsTable({ initialPests }: { initialPests: any[]
                   />
                 </TableCell>
                 <TableCell>
-                  <EditableCell
-                    value={pest.common_name_en || ''}
-                    onSave={(newVal) => handleSave(pest.id, 'common_name_en', newVal)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <EditableCell
+                      value={pest.common_name_en || ''}
+                      onSave={(newVal) => handleSave(pest.id, 'common_name_en', newVal)}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fetchAndUpdateCommonName(pest.id, pest.scientific_name)}
+                      disabled={refreshingId === pest.id}
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${refreshingId === pest.id ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <EditableCell

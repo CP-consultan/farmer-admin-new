@@ -16,6 +16,8 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTheme } from '@/context/ThemeContext'
+import { useEffect, useState } from 'react'
+import { Bug, FileText, ShoppingCart, Tractor, Wrench, Users } from 'lucide-react'
 
 interface DashboardChartsProps {
   counts: {
@@ -32,38 +34,44 @@ interface DashboardChartsProps {
 
 export default function DashboardCharts({ counts, recentPests, recentAdvisories }: DashboardChartsProps) {
   const { theme } = useTheme()
-  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    setIsDark(theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches))
+  }, [theme])
 
   const barData = [
-    { name: 'Pests', value: counts.pest, color: '#3B82F6' },
-    { name: 'Advisories', value: counts.advisory, color: '#10B981' },
-    { name: 'Products', value: counts.product, color: '#F59E0B' },
-    { name: 'Equipment', value: counts.equipment, color: '#8B5CF6' },
-    { name: 'Labor', value: counts.labor, color: '#EC4899' },
-    { name: 'Users', value: counts.user, color: '#6366F1' },
+    { name: 'Pests', value: counts.pest, color: '#708238' }, // Olive Green
+    { name: 'Advisories', value: counts.advisory, color: '#8B5A2B' }, // Brown
+    { name: 'Products', value: counts.product, color: '#4A6FA5' }, // Steel Blue
+    { name: 'Equipment', value: counts.equipment, color: '#9B6B9E' }, // Purple
+    { name: 'Labor', value: counts.labor, color: '#D98C4A' }, // Orange
+    { name: 'Users', value: counts.user, color: '#5F9EA0' }, // Cadet Blue
   ]
 
   const COLORS = barData.map(d => d.color)
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-[#708238] to-[#5a6a2e] bg-clip-text text-transparent">
         Dashboard
       </h1>
       <p className="text-muted-foreground">Welcome back! Here's what's happening with your app.</p>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard title="Total Pests" count={counts.pest} href="/admin/pests" icon="🐛" />
-        <StatCard title="Total Advisories" count={counts.advisory} href="/admin/advisories" icon="📝" />
-        <StatCard title="Products" count={counts.product} href="/admin/products" icon="🛒" />
-        <StatCard title="Equipment" count={counts.equipment} href="/admin/equipment" icon="🚜" />
-        <StatCard title="Labor" count={counts.labor} href="/admin/labor" icon="👷" />
-        <StatCard title="Users" count={counts.user} href="/admin/users" icon="👤" />
+        <StatCard title="Total Pests" count={counts.pest} href="/admin/pests" icon={Bug} color="from-[#708238] to-[#5a6a2e]" />
+        <StatCard title="Total Advisories" count={counts.advisory} href="/admin/advisories" icon={FileText} color="from-[#8B5A2B] to-[#6b431f]" />
+        <StatCard title="Products" count={counts.product} href="/admin/products" icon={ShoppingCart} color="from-[#4A6FA5] to-[#3a5a8a]" />
+        <StatCard title="Equipment" count={counts.equipment} href="/admin/equipment" icon={Tractor} color="from-[#9B6B9E] to-[#7b4f7e]" />
+        <StatCard title="Labor" count={counts.labor} href="/admin/labor" icon={Wrench} color="from-[#D98C4A] to-[#b86e2a]" />
+        <StatCard title="Users" count={counts.user} href="/admin/users" icon={Users} color="from-[#5F9EA0] to-[#3f7a7c]" />
       </div>
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="overflow-hidden border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
+        <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-[#708238]/10 to-transparent">
             <CardTitle>Content Distribution</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
@@ -92,8 +100,8 @@ export default function DashboardCharts({ counts, recentPests, recentAdvisories 
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
+        <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-[#708238]/10 to-transparent">
             <CardTitle>Proportion of Data</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
@@ -130,9 +138,10 @@ export default function DashboardCharts({ counts, recentPests, recentAdvisories 
         </Card>
       </div>
 
+      {/* Recent Activity */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-[#708238]/10 to-transparent">
             <CardTitle>Recent Pests</CardTitle>
           </CardHeader>
           <CardContent>
@@ -143,7 +152,7 @@ export default function DashboardCharts({ counts, recentPests, recentAdvisories 
                     <p className="font-medium">{pest.scientific_name}</p>
                     <p className="text-sm text-muted-foreground">{pest.common_name_en || pest.common_name}</p>
                   </div>
-                  <Link href={`/admin/pests/${pest.id}/edit`} className="text-sm font-medium text-primary hover:underline opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Link href={`/admin/pests/${pest.id}/edit`} className="text-sm font-medium text-[#708238] hover:underline opacity-0 group-hover:opacity-100 transition-opacity">
                     Edit
                   </Link>
                 </li>
@@ -153,8 +162,8 @@ export default function DashboardCharts({ counts, recentPests, recentAdvisories 
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-[#708238]/10 to-transparent">
             <CardTitle>Recent Advisories</CardTitle>
           </CardHeader>
           <CardContent>
@@ -165,7 +174,7 @@ export default function DashboardCharts({ counts, recentPests, recentAdvisories 
                     <p className="font-medium">{adv.title}</p>
                     <p className="text-sm text-muted-foreground">{adv.pests?.scientific_name || 'Unknown pest'}</p>
                   </div>
-                  <Link href={`/admin/advisories/${adv.id}/edit`} className="text-sm font-medium text-primary hover:underline opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Link href={`/admin/advisories/${adv.id}/edit`} className="text-sm font-medium text-[#708238] hover:underline opacity-0 group-hover:opacity-100 transition-opacity">
                     Edit
                   </Link>
                 </li>
@@ -179,19 +188,19 @@ export default function DashboardCharts({ counts, recentPests, recentAdvisories 
   )
 }
 
-function StatCard({ title, count, href, icon }: { title: string; count: number; href: string; icon: string }) {
+function StatCard({ title, count, href, icon: Icon, color }: { title: string; count: number; href: string; icon: any; color: string }) {
   return (
     <Link href={href} className="group">
-      <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-card to-muted/20 overflow-hidden">
-        <CardContent className="p-6">
+      <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+        <div className={`bg-gradient-to-br ${color} p-6`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">{title}</p>
-              <p className="text-3xl font-bold text-primary">{count}</p>
+              <p className="text-sm font-medium text-white/80">{title}</p>
+              <p className="text-3xl font-bold text-white">{count}</p>
             </div>
-            <span className="text-3xl opacity-80 group-hover:scale-110 transition-transform duration-300">{icon}</span>
+            <Icon className="h-10 w-10 text-white/80 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />
           </div>
-        </CardContent>
+        </div>
       </Card>
     </Link>
   )

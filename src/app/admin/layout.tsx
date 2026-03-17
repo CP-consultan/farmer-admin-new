@@ -26,20 +26,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Balanced, catchy header */}
-      <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-slate-800 to-slate-700 text-white shadow-lg">
+      {/* Olive Green banner – #708238, solid (100% opacity) */}
+      <header className="sticky top-0 z-50 w-full bg-[#708238] border-b border-[#5a6a2e] shadow-lg">
         {/* Top row */}
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link 
             href="/admin" 
-            className="flex items-center gap-2 font-bold text-xl text-white hover:text-primary-foreground transition-colors"
+            className="flex items-center gap-2 font-extrabold text-2xl text-white hover:text-amber-200 transition-colors"
           >
-            <Leaf className="h-6 w-6 text-amber-300" strokeWidth={1.5} />
+            <Leaf className="h-7 w-7 text-amber-300" strokeWidth={1.8} />
             <span>Farmer Admin</span>
           </Link>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center gap-2 text-sm text-slate-200">
-              <UserCircle className="h-8 w-8 text-amber-200" />
+            <div className="flex items-center gap-2 text-base font-medium text-white/80">
+              <UserCircle className="h-9 w-9 text-amber-300/80" />
             </div>
             <ThemeToggle />
           </div>
@@ -53,13 +53,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-2 px-5 py-3 text-sm font-medium rounded-t-lg transition-all duration-200',
+                  'flex items-center gap-2 px-6 py-3 text-base font-semibold rounded-t-lg transition-all duration-200',
                   isActive(item.href)
-                    ? 'bg-white text-slate-800 shadow-md'
-                    : 'text-slate-200 hover:bg-slate-600/50 hover:text-white'
+                    ? 'bg-white/20 text-white shadow-md border-b-2 border-amber-400'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-5 w-5" strokeWidth={1.8} />
                 {item.name}
               </Link>
             ))}

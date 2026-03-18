@@ -5,6 +5,17 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
+// Define simple types for the related data
+type PestInfo = {
+  scientific_name: string
+  common_name_en: string | null
+}
+
+type CropInfo = {
+  name: string
+  common_name_en: string | null
+}
+
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
@@ -30,14 +41,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     .select('crop_id, crops(name, common_name_en)')
     .eq('product_id', id)
 
-  // Extract and filter out any null entries (though none should be null)
-  const pests = (pestLinks ?? [])
-    .map(link => link.pests)
-    .filter((pest): pest is { scientific_name: string; common_name_en: string | null } => pest !== null)
+  // Extract the pest objects, filtering out any nulls
+  const pests: PestInfo[] = (pestLinks ?? [])
+    .map(link => link.pests as PestInfo)
+    .filter(pest => pest !== null)
 
-  const crops = (cropLinks ?? [])
-    .map(link => link.crops)
-    .filter((crop): crop is { name: string; common_name_en: string | null } => crop !== null)
+  const crops: CropInfo[] = (cropLinks ?? [])
+    .map(link => link.crops as CropInfo)
+    .filter(crop => crop !== null)
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">

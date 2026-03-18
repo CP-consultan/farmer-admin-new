@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-// Define simple types for the related data
+// Types for the related data
 type PestInfo = {
   scientific_name: string
   common_name_en: string | null
@@ -29,26 +29,26 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   if (!product) notFound()
 
-  // Fetch linked pests with their names
+  // Fetch linked pests – note: pests is an array even though it's a single object
   const { data: pestLinks } = await supabase
     .from('product_pests')
     .select('pest_id, pests(scientific_name, common_name_en)')
     .eq('product_id', id)
 
-  // Fetch linked crops with their names
+  // Fetch linked crops – similarly, crops is an array
   const { data: cropLinks } = await supabase
     .from('product_crops')
     .select('crop_id, crops(name, common_name_en)')
     .eq('product_id', id)
 
-  // Extract the pest objects, filtering out any nulls
+  // Safely extract the first element of the related array
   const pests: PestInfo[] = (pestLinks ?? [])
-    .map(link => link.pests as PestInfo)
-    .filter(pest => pest !== null)
+    .map(link => link.pests?.[0])
+    .filter((pest): pest is PestInfo => pest !== undefined)
 
   const crops: CropInfo[] = (cropLinks ?? [])
-    .map(link => link.crops as CropInfo)
-    .filter(crop => crop !== null)
+    .map(link => link.crops?.[0])
+    .filter((crop): crop is CropInfo => crop !== undefined)
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">

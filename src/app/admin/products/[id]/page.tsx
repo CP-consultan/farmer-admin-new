@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-export default async function ViewProductPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
@@ -18,45 +18,34 @@ export default async function ViewProductPage({ params }: { params: Promise<{ id
 
   if (!product) notFound()
 
-  // Fetch linked pests
+  // Fetch linked pests with their names
   const { data: pestLinks } = await supabase
     .from('product_pests')
-    .select('pest_id')
+    .select('pest_id, pests(scientific_name, common_name_en)')
     .eq('product_id', id)
 
-  const pestIds = pestLinks?.map(p => p.pest_id) || []
-
-  const { data: pests } = pestIds.length > 0
-    ? await supabase
-        .from('pests')
-        .select('id, scientific_name, common_name_en, category')
-        .in('id', pestIds)
-        .order('scientific_name')
-    : { data: [] }
-
-  // Fetch linked crops
+  // Fetch linked crops with their names
   const { data: cropLinks } = await supabase
     .from('product_crops')
-    .select('crop_id')
+    .select('crop_id, crops(name, common_name_en)')
     .eq('product_id', id)
 
-  const cropIds = cropLinks?.map(c => c.crop_id) || []
-
-  const { data: crops } = cropIds.length > 0
-    ? await supabase
-        .from('crops')
-        .select('id, name, common_name_en')
-        .in('id', cropIds)
-        .order('name')
-    : { data: [] }
+  // Safely extract the data
+  const pests = pestLinks?.map(link => link.pests) ?? []
+  const crops = cropLinks?.map(link => link.crops) ?? []
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">{product.name}</h1>
-        <Link href={`/admin/products/${id}/edit`}>
-          <Button>Edit Product</Button>
-        </Link>
+        <div className="space-x-2">
+          <Link href={`/admin/products/${id}/edit`}>
+            <Button variant="outline">Edit</Button>
+          </Link>
+          <Link href="/admin/products">
+            <Button variant="ghost">Back to List</Button>
+          </Link>
+        </div>
       </div>
 
       <Card>
@@ -64,75 +53,90 @@ export default async function ViewProductPage({ params }: { params: Promise<{ id
           <CardTitle>Product Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Type</p>
-              <p className="capitalize">{product.type}</p>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Type</p>
+            <p className="capitalize">{product.type}</p>
+          </div>
+          {product.sub_type && (
             <div>
               <p className="text-sm font-medium text-muted-foreground">Sub‑Type</p>
-              <p>{product.sub_type || '-'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Ingredient</p>
-              <p>{product.active_ingredient || '-'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Manufacturer</p>
-              <p>{product.manufacturer || '-'}</p>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Mode of Action</p>
-            <p>{product.mode_of_action || '-'}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Application Method</p>
-            <p>{product.application_method || '-'}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Dosage</p>
-            <p>{product.dosage || '-'}</p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Safety Information</p>
-            <p>{product.safety_info || '-'}</p>
-          </div>
-
-          {pests.length > 0 && (
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Target Pests</p>
-              <div className="flex flex-wrap gap-2">
-                {pests.map((pest) => (
-                  <Badge key={pest.id} variant="outline" className="bg-blue-50">
-                    {pest.scientific_name}
-                    {pest.common_name_en && <span className="ml-1 text-xs">({pest.common_name_en})</span>}
-                    <span className="ml-1 text-xs text-muted-foreground">({pest.category})</span>
-                  </Badge>
-                ))}
-              </div>
+              <p>{product.sub_type}</p>
             </div>
           )}
-
-          {crops.length > 0 && (
+          {product.active_ingredient && (
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Applicable Crops</p>
-              <div className="flex flex-wrap gap-2">
-                {crops.map((crop) => (
-                  <Badge key={crop.id} variant="outline" className="bg-green-50">
-                    {crop.name}
-                    {crop.common_name_en && <span className="ml-1 text-xs">({crop.common_name_en})</span>}
-                  </Badge>
-                ))}
-              </div>
+              <p className="text-sm font-medium text-muted-foreground">Active Ingredient</p>
+              <p>{product.active_ingredient}</p>
+            </div>
+          )}
+          {product.mode_of_action && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Mode of Action</p>
+              <p>{product.mode_of_action}</p>
+            </div>
+          )}
+          {product.dosage && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Dosage</p>
+              <p>{product.dosage}</p>
+            </div>
+          )}
+          {product.application_method && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Application Method</p>
+              <p>{product.application_method}</p>
+            </div>
+          )}
+          {product.manufacturer && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Manufacturer</p>
+              <p>{product.manufacturer}</p>
+            </div>
+          )}
+          {product.safety_info && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Safety Information</p>
+              <p className="whitespace-pre-wrap">{product.safety_info}</p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {pests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Target Pests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {pests.map((pest, idx) => (
+                <Badge key={idx} variant="secondary">
+                  {pest.scientific_name}
+                  {pest.common_name_en && ` (${pest.common_name_en})`}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {crops.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Applicable Crops</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {crops.map((crop, idx) => (
+                <Badge key={idx} variant="secondary">
+                  {crop.name}
+                  {crop.common_name_en && ` (${crop.common_name_en})`}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

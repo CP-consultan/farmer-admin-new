@@ -29,6 +29,11 @@ export default function ActiveIngredientInput({
   const [searchTerm, setSearchTerm] = useState(value)
   const [loading, setLoading] = useState(false)
 
+  // Update searchTerm when value changes externally
+  useEffect(() => {
+    setSearchTerm(value)
+  }, [value])
+
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!searchTerm || searchTerm.length < 2) {
@@ -73,11 +78,11 @@ export default function ActiveIngredientInput({
     }
   }
 
-  const handleSelect = (suggestion: string) => {
-    onChange(suggestion)
-    setSearchTerm(suggestion)
+  const handleSelect = (selectedValue: string) => {
+    onChange(selectedValue)
+    setSearchTerm(selectedValue)
     setOpen(false)
-    fetchModeOfAction(suggestion)
+    fetchModeOfAction(selectedValue)
   }
 
   return (
@@ -95,7 +100,7 @@ export default function ActiveIngredientInput({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0">
+        <PopoverContent className="w-full p-0" align="start">
           <Command>
             <CommandInput
               placeholder={placeholder}

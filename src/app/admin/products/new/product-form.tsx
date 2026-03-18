@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { MultiSelect } from '@/components/multi-select'
 import ActiveIngredientInput from '@/components/active-ingredient-input'
 
 interface Pest {
@@ -27,19 +28,6 @@ interface ProductFormProps {
   pests: Pest[]
   crops: Crop[]
   initialData?: any
-}
-
-// Map sub‑types to pest categories (adjust to match your database values)
-const subTypeToCategory: Record<string, string> = {
-  Herbicide: 'weed',
-  Insecticide: 'insect',
-  Fungicide: 'fungus',
-  Bactericide: 'bacteria',
-  Nematicide: 'nematode',       // if you have such category
-  Acaricide: 'mite',             // if needed
-  Rodenticide: 'rodent',         // if needed
-  Molluscicide: 'mollusc',       // if needed
-  'Plant Growth Regulator': 'plant', // fallback or none
 }
 
 const pesticideSubTypes = [
@@ -72,6 +60,17 @@ const fertilizerSubTypes = [
   'Bio‑fertilizer'
 ]
 
+// Map sub‑types to pest categories
+const subTypeToCategory: Record<string, string> = {
+  Herbicide: 'weed',
+  Insecticide: 'insect',
+  Fungicide: 'fungus',
+  Bactericide: 'bacteria',
+  Nematicide: 'nematode',
+  Acaricide: 'mite',
+  // add others as needed
+}
+
 export default function ProductForm({ pests, crops, initialData }: ProductFormProps) {
   const [name, setName] = useState(initialData?.name || '')
   const [type, setType] = useState(initialData?.type || '')
@@ -93,16 +92,24 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   // Filter pests based on sub‑type category
   const filteredPests = useMemo(() => {
     if (!subType || !subTypeToCategory[subType]) {
-      return pests // show all if no mapping or no sub‑type
+      return pests // show all if no mapping
     }
     const targetCategory = subTypeToCategory[subType]
     return pests.filter(p => p.category?.toLowerCase() === targetCategory.toLowerCase())
   }, [pests, subType])
 
-  // Reset selected pests when sub‑type changes (to avoid invalid selections)
-  useEffect(() => {
-    setSelectedPests([])
-  }, [subType])
+  // Convert to options format for MultiSelect
+  const pestOptions = filteredPests.map(p => ({
+    id: p.id,
+    label: p.common_name_en
+      ? `${p.scientific_name} (${p.common_name_en})`
+      : p.scientific_name
+  }))
+
+  const cropOptions = crops.map(c => ({
+    id: c.id,
+    label: c.common_name_en ? `${c.name} (${c.common_name_en})` : c.name
+  }))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -120,83 +127,75 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       manufacturer: manufacturer || null,
     }
 
-    if (initialData) {
-      const { error } = await supabase
-        .from('agrochemicals')
-        .update(productData)
-        .eq('id', initialData.id)
+    try {
+      if (initialData) {
+        // Update product
+        const { error: updateError } = await supabase
+          .from('agrochemicals')
+          .update(productData)
+          .eq('id', initialData.id)
+        if (updateError) throw updateError
 
-      if (error) {
-        alert('Error updating product: ' + error.message)
-        setLoading(false)
-        return
+        // Delete old relationships
+        await supabase.from('product_pests').delete().eq('product_id', initialData.id)
+        await supabase.from('product_crops').delete().eq('product_id', initialData.id)
+
+        // Insert new relationships
+        if (selectedPests.length > 0) {
+          const pestInserts = selectedPests.map(pestId => ({
+            product_id: initialData.id,
+            pest_id: pestId
+          }))
+          const { error: pestError } = await supabase.from('product_pests').insert(pestInserts)
+          if (pestError) throw pestError
+        }
+
+        if (selectedCrops.length > 0) {
+          const cropInserts = selectedCrops.map(cropId => ({
+            product_id: initialData.id,
+            crop_id: cropId
+          }))
+          const { error: cropError } = await supabase.from('product_crops').insert(cropInserts)
+          if (cropError) throw cropError
+        }
+
+        alert('Product updated successfully!')
+      } else {
+        // Create new product
+        const { data: newProduct, error: insertError } = await supabase
+          .from('agrochemicals')
+          .insert([productData])
+          .select()
+          .single()
+        if (insertError) throw insertError
+
+        if (selectedPests.length > 0) {
+          const pestInserts = selectedPests.map(pestId => ({
+            product_id: newProduct.id,
+            pest_id: pestId
+          }))
+          const { error: pestError } = await supabase.from('product_pests').insert(pestInserts)
+          if (pestError) throw pestError
+        }
+
+        if (selectedCrops.length > 0) {
+          const cropInserts = selectedCrops.map(cropId => ({
+            product_id: newProduct.id,
+            crop_id: cropId
+          }))
+          const { error: cropError } = await supabase.from('product_crops').insert(cropInserts)
+          if (cropError) throw cropError
+        }
+
+        alert('Product created successfully!')
       }
-
-      await supabase.from('product_pests').delete().eq('product_id', initialData.id)
-      await supabase.from('product_crops').delete().eq('product_id', initialData.id)
-
-      if (selectedPests.length > 0) {
-        const pestInserts = selectedPests.map(pestId => ({
-          product_id: initialData.id,
-          pest_id: pestId
-        }))
-        await supabase.from('product_pests').insert(pestInserts)
-      }
-
-      if (selectedCrops.length > 0) {
-        const cropInserts = selectedCrops.map(cropId => ({
-          product_id: initialData.id,
-          crop_id: cropId
-        }))
-        await supabase.from('product_crops').insert(cropInserts)
-      }
-    } else {
-      const { data: product, error } = await supabase
-        .from('agrochemicals')
-        .insert([productData])
-        .select()
-        .single()
-
-      if (error) {
-        alert('Error creating product: ' + error.message)
-        setLoading(false)
-        return
-      }
-
-      if (selectedPests.length > 0) {
-        const pestInserts = selectedPests.map(pestId => ({
-          product_id: product.id,
-          pest_id: pestId
-        }))
-        await supabase.from('product_pests').insert(pestInserts)
-      }
-
-      if (selectedCrops.length > 0) {
-        const cropInserts = selectedCrops.map(cropId => ({
-          product_id: product.id,
-          crop_id: cropId
-        }))
-        await supabase.from('product_crops').insert(cropInserts)
-      }
+      router.push('/admin/products')
+    } catch (error: any) {
+      alert('Error: ' + error.message)
+      console.error(error)
+    } finally {
+      setLoading(false)
     }
-
-    router.push('/admin/products')
-  }
-
-  const togglePest = (pestId: string) => {
-    setSelectedPests(prev =>
-      prev.includes(pestId)
-        ? prev.filter(id => id !== pestId)
-        : [...prev, pestId]
-    )
-  }
-
-  const toggleCrop = (cropId: string) => {
-    setSelectedCrops(prev =>
-      prev.includes(cropId)
-        ? prev.filter(id => id !== cropId)
-        : [...prev, cropId]
-    )
   }
 
   return (
@@ -208,7 +207,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
       <div>
         <Label>Type *</Label>
-        <Select value={type} onValueChange={(val) => { setType(val); setSubType('') }} required>
+        <Select value={type} onValueChange={(val) => { setType(val); setSubType(''); setSelectedPests([]); }} required>
           <SelectTrigger>
             <SelectValue placeholder="Select type" />
           </SelectTrigger>
@@ -251,54 +250,25 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
           value={modeOfAction}
           onChange={(e) => setModeOfAction(e.target.value)}
           rows={2}
-          placeholder="Will auto‑populate when ingredient is selected"
         />
       </div>
 
-      <div>
-        <Label>Target Pests (select multiple)</Label>
-        <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-          {filteredPests.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pests found for this sub‑type</p>
-          ) : (
-            filteredPests.map((pest) => (
-              <div key={pest.id} className="flex items-center space-x-2 py-1">
-                <input
-                  type="checkbox"
-                  id={`pest-${pest.id}`}
-                  checked={selectedPests.includes(pest.id)}
-                  onChange={() => togglePest(pest.id)}
-                  className="rounded border-gray-300"
-                />
-                <label htmlFor={`pest-${pest.id}`} className="text-sm">
-                  {pest.scientific_name} {pest.common_name_en && `(${pest.common_name_en})`}
-                  <span className="ml-2 text-xs text-muted-foreground">({pest.category})</span>
-                </label>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      <MultiSelect
+        label="Target Pests"
+        options={pestOptions}
+        selected={selectedPests}
+        onChange={setSelectedPests}
+        placeholder="Select pests..."
+        emptyMessage="No pests match the selected sub‑type"
+      />
 
-      <div>
-        <Label>Applicable Crops (select multiple)</Label>
-        <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-          {crops.map((crop) => (
-            <div key={crop.id} className="flex items-center space-x-2 py-1">
-              <input
-                type="checkbox"
-                id={`crop-${crop.id}`}
-                checked={selectedCrops.includes(crop.id)}
-                onChange={() => toggleCrop(crop.id)}
-                className="rounded border-gray-300"
-              />
-              <label htmlFor={`crop-${crop.id}`} className="text-sm">
-                {crop.name} {crop.common_name_en && `(${crop.common_name_en})`}
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
+      <MultiSelect
+        label="Applicable Crops"
+        options={cropOptions}
+        selected={selectedCrops}
+        onChange={setSelectedCrops}
+        placeholder="Select crops..."
+      />
 
       <div>
         <Label>Application Method</Label>

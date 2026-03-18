@@ -23,23 +23,20 @@ export default async function EditAdvisoryPage({ params }: { params: Promise<{ i
 
   const linkedProductIds = links?.map(l => l.product_id) || []
 
-  // Prepare initialData for form
   const initialData = {
     ...advisory,
     products: linkedProductIds
   }
 
-  // Fetch all pests for dropdown
+  // Fetch pests and products (with all needed fields)
   const { data: pests } = await supabase
     .from('pests')
     .select('id, scientific_name, common_name_en, category')
     .order('scientific_name')
 
-  // Fetch all products (including dosage and application_method)
   const { data: products } = await supabase
     .from('agrochemicals')
     .select('id, name, type, sub_type, active_ingredient, dosage, application_method')
-    .eq('type', 'pesticide')
     .order('name')
 
   return (

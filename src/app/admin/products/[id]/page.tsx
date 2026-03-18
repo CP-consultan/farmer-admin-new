@@ -30,9 +30,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     .select('crop_id, crops(name, common_name_en)')
     .eq('product_id', id)
 
-  // Safely extract the data
-  const pests = pestLinks?.map(link => link.pests) ?? []
-  const crops = cropLinks?.map(link => link.crops) ?? []
+  // Extract the pest objects safely
+  const pests = (pestLinks?.map(link => link.pests) ?? []).filter(Boolean) as { scientific_name: string; common_name_en: string | null }[]
+  const crops = (cropLinks?.map(link => link.crops) ?? []).filter(Boolean) as { name: string; common_name_en: string | null }[]
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">

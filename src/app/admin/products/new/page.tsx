@@ -6,7 +6,7 @@ export default async function NewProductPage() {
   const supabase = await createClient()
   const { data: pests } = await supabase
     .from('pests')
-    .select('id, scientific_name, common_name_en')
+    .select('id, scientific_name, common_name_en, category')  // added category
     .order('scientific_name')
 
   const { data: crops } = await supabase

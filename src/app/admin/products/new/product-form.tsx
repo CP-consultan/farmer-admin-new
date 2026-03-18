@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -10,10 +10,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import ActiveIngredientInput from '@/components/active-ingredient-input'
 
+interface Pest {
+  id: string
+  scientific_name: string
+  common_name_en: string | null
+  category: string
+}
+
+interface Crop {
+  id: string
+  name: string
+  common_name_en: string | null
+}
+
 interface ProductFormProps {
-  pests: { id: string; scientific_name: string; common_name_en: string | null }[]
-  crops: { id: string; name: string; common_name_en: string | null }[]
+  pests: Pest[]
+  crops: Crop[]
   initialData?: any
+}
+
+// Map sub‑types to pest categories (adjust to match your database values)
+const subTypeToCategory: Record<string, string> = {
+  Herbicide: 'weed',
+  Insecticide: 'insect',
+  Fungicide: 'fungus',
+  Bactericide: 'bacteria',
+  Nematicide: 'nematode',       // if you have such category
+  Acaricide: 'mite',             // if needed
+  Rodenticide: 'rodent',         // if needed
+  Molluscicide: 'mollusc',       // if needed
+  'Plant Growth Regulator': 'plant', // fallback or none
 }
 
 const pesticideSubTypes = [
@@ -63,6 +89,20 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   const supabase = createClient()
 
   const subTypeOptions = type === 'pesticide' ? pesticideSubTypes : fertilizerSubTypes
+
+  // Filter pests based on sub‑type category
+  const filteredPests = useMemo(() => {
+    if (!subType || !subTypeToCategory[subType]) {
+      return pests // show all if no mapping or no sub‑type
+    }
+    const targetCategory = subTypeToCategory[subType]
+    return pests.filter(p => p.category?.toLowerCase() === targetCategory.toLowerCase())
+  }, [pests, subType])
+
+  // Reset selected pests when sub‑type changes (to avoid invalid selections)
+  useEffect(() => {
+    setSelectedPests([])
+  }, [subType])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -216,40 +256,27 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       </div>
 
       <div>
-        <Label>Application Method</Label>
-        <Textarea
-          value={applicationMethod}
-          onChange={(e) => setApplicationMethod(e.target.value)}
-          rows={2}
-        />
-      </div>
-
-      <div>
-        <Label>Dosage</Label>
-        <Input
-          value={dosage}
-          onChange={(e) => setDosage(e.target.value)}
-          placeholder="e.g., 2 ml/L"
-        />
-      </div>
-
-      <div>
         <Label>Target Pests (select multiple)</Label>
         <div className="border rounded-md p-4 max-h-60 overflow-y-auto">
-          {pests.map((pest) => (
-            <div key={pest.id} className="flex items-center space-x-2 py-1">
-              <input
-                type="checkbox"
-                id={`pest-${pest.id}`}
-                checked={selectedPests.includes(pest.id)}
-                onChange={() => togglePest(pest.id)}
-                className="rounded border-gray-300"
-              />
-              <label htmlFor={`pest-${pest.id}`} className="text-sm">
-                {pest.scientific_name} {pest.common_name_en && `(${pest.common_name_en})`}
-              </label>
-            </div>
-          ))}
+          {filteredPests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pests found for this sub‑type</p>
+          ) : (
+            filteredPests.map((pest) => (
+              <div key={pest.id} className="flex items-center space-x-2 py-1">
+                <input
+                  type="checkbox"
+                  id={`pest-${pest.id}`}
+                  checked={selectedPests.includes(pest.id)}
+                  onChange={() => togglePest(pest.id)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor={`pest-${pest.id}`} className="text-sm">
+                  {pest.scientific_name} {pest.common_name_en && `(${pest.common_name_en})`}
+                  <span className="ml-2 text-xs text-muted-foreground">({pest.category})</span>
+                </label>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -271,6 +298,24 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
             </div>
           ))}
         </div>
+      </div>
+
+      <div>
+        <Label>Application Method</Label>
+        <Textarea
+          value={applicationMethod}
+          onChange={(e) => setApplicationMethod(e.target.value)}
+          rows={2}
+        />
+      </div>
+
+      <div>
+        <Label>Dosage</Label>
+        <Input
+          value={dosage}
+          onChange={(e) => setDosage(e.target.value)}
+          placeholder="e.g., 2 ml/L"
+        />
       </div>
 
       <div>

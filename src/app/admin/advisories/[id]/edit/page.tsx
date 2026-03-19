@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation'
 import { LanguageProvider } from '@/contexts/language-context'
 import ClientOnly from '@/components/client-only'
-import AdvisoryForm from '../new/advisory-form'
+import AdvisoryForm from '../../new/advisory-form'
 
 export default async function EditAdvisoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -19,7 +19,6 @@ export default async function EditAdvisoryPage({ params }: { params: Promise<{ i
 
   if (!advisory) notFound()
 
-  // Get products linked to this advisory
   const productIds = advisory.advisory_products.map((ap: any) => ap.product_id)
 
   const { data: pests } = await supabase
@@ -32,7 +31,6 @@ export default async function EditAdvisoryPage({ params }: { params: Promise<{ i
     .select('*')
     .order('name')
 
-  // Prepare initial data for form
   const initialData = {
     ...advisory,
     products: productIds

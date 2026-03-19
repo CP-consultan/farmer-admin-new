@@ -74,7 +74,8 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
           .select('id, name, type, sub_type, active_ingredient, dosage, application_method')
           .in('id', productIds)
           .order('name')
-        setRecommendedProducts(prods || [])
+        // Cast to Product[] to satisfy TypeScript (type is included in select)
+        setRecommendedProducts((prods || []) as Product[])
       } else {
         setRecommendedProducts([])
       }
@@ -83,7 +84,7 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
     fetchRecommendedProducts()
   }, [selectedPestId, supabase])
 
-  // Auto-fill chemical control from selected products (optional – you may want to keep manual editing)
+  // Auto-fill chemical control from selected products (optional)
   useEffect(() => {
     const selectedDetails = recommendedProducts.filter(p => selectedProducts.includes(p.id))
     if (selectedDetails.length === 0) return
@@ -94,7 +95,6 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
       if (p.application_method) line += ` (${p.application_method})`
       return line
     })
-    // Only set if user hasn't modified it?
     setChemicalControl(`Recommended products: ${lines.join('; ')}`)
   }, [selectedProducts, recommendedProducts])
 

@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { MultiSelect } from '@/components/multi-select'
-import ActiveIngredientInput from '@/components/active-ingredient-input'
 import { ReadFormButton } from '@/components/read-form-button'
 import { useLanguage } from '@/contexts/language-context'
 
@@ -72,11 +71,18 @@ const subTypeToCategory: Record<string, string> = {
 }
 
 export default function ProductForm({ pests, crops, initialData }: ProductFormProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [name, setName] = useState(initialData?.name || '')
+  const [nameUr, setNameUr] = useState(initialData?.name_ur || '')
   const [type, setType] = useState(initialData?.type || '')
   const [subType, setSubType] = useState(initialData?.sub_type || '')
-  const [activeIngredient, setActiveIngredient] = useState(initialData?.active_ingredient || '')
+  // Multi-line active ingredients
+  const [activeIngredients, setActiveIngredients] = useState<string[]>(() => {
+    if (initialData?.active_ingredient) {
+      return initialData.active_ingredient.split('\n').filter((line: string) => line.trim() !== '')
+    }
+    return ['']
+  })
   const [modeOfAction, setModeOfAction] = useState(initialData?.mode_of_action || '')
   const [applicationMethod, setApplicationMethod] = useState(initialData?.application_method || '')
   const [dosage, setDosage] = useState(initialData?.dosage || '')
@@ -90,6 +96,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
   const subTypeOptions = type === 'pesticide' ? pesticideSubTypes : fertilizerSubTypes
 
+  // Filter pests based on selected sub-type (if applicable)
   const filteredPests = useMemo(() => {
     if (!subType || !subTypeToCategory[subType]) {
       return pests
@@ -110,12 +117,33 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     label: c.common_name_en ? `${c.name} (${c.common_name_en})` : c.name
   }))
 
+  // Multi-line active ingredient handlers
+  const addActiveIngredientLine = () => {
+    setActiveIngredients([...activeIngredients, ''])
+  }
+
+  const removeActiveIngredientLine = (index: number) => {
+    const newLines = activeIngredients.filter((_, i) => i !== index)
+    setActiveIngredients(newLines.length ? newLines : [''])
+  }
+
+  const updateActiveIngredientLine = (index: number, value: string) => {
+    const newLines = [...activeIngredients]
+    newLines[index] = value
+    setActiveIngredients(newLines)
+  }
+
+  const getCombinedActiveIngredient = () => {
+    return activeIngredients.filter(line => line.trim() !== '').join('\n')
+  }
+
   const getFormSections = () => {
     const sections = [
       { label: t('product_form.product_name'), value: name },
+      { label: 'Product Name (Urdu)', value: nameUr },
       { label: t('product_form.type'), value: type },
       { label: t('product_form.subtype'), value: subType },
-      { label: t('product_form.active_ingredient'), value: activeIngredient },
+      { label: t('product_form.active_ingredient'), value: getCombinedActiveIngredient() },
       { label: t('product_form.mode_of_action'), value: modeOfAction },
       { label: t('product_form.application_method'), value: applicationMethod },
       { label: t('product_form.dosage'), value: dosage },
@@ -147,9 +175,10 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
     const productData = {
       name,
+      name_ur: nameUr || null,
       type,
       sub_type: subType || null,
-      active_ingredient: activeIngredient || null,
+      active_ingredient: getCombinedActiveIngredient() || null,
       mode_of_action: modeOfAction || null,
       application_method: applicationMethod || null,
       dosage: dosage || null,
@@ -225,7 +254,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">
           {initialData ? t('product_form.title_edit') : t('product_form.title_new')}
@@ -236,6 +265,11 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       <div>
         <Label>{t('product_form.product_name')}</Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required />
+      </div>
+
+      <div>
+        <Label>Product Name (Urdu)</Label>
+        <Input value={nameUr} onChange={(e) => setNameUr(e.target.value)} />
       </div>
 
       <div>
@@ -269,20 +303,50 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         </div>
       )}
 
-      <ActiveIngredientInput
-        value={activeIngredient}
-        onChange={setActiveIngredient}
-        onModeOfActionFetched={setModeOfAction}
-        label={t('product_form.active_ingredient')}
-        category={subType}
-      />
+      <div className="space-y-2">
+        <Label>{t('product_form.active_ingredient')} (one per line)</Label>
+        {activeIngredients.map((line, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <Input
+              value={line}
+              onChange={(e) => updateActiveIngredientLine(index, e.target.value)}
+              placeholder={`Active ingredient ${index + 1}`}
+              className="flex-1"
+            />
+            {activeIngredients.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeActiveIngredientLine(index)}
+                className="text-red-500"
+              >
+                ✕
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addActiveIngredientLine}
+          className="mt-1"
+        >
+          + Add another active ingredient
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Enter each active ingredient on a separate line.
+        </p>
+      </div>
 
       <div>
         <Label>{t('product_form.mode_of_action')}</Label>
         <Textarea
           value={modeOfAction}
           onChange={(e) => setModeOfAction(e.target.value)}
-          rows={2}
+          rows={3}
+          placeholder="Describe the mode of action (can include multiple if needed)"
         />
       </div>
 

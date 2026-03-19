@@ -32,7 +32,7 @@ export function CropCombobox({ value, onChange, placeholder = "Search crop...", 
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const supabase = createClient()
-  const searchTimeout = useRef<NodeJS.Timeout>()
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (searchTimeout.current) {

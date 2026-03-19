@@ -83,7 +83,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     }
     return ['']
   })
-  const [modeOfAction, setModeOfAction] = useState(initialData?.mode_of_action || '')
+  const [modeOfAction, setModeOfAction] = useState<string>(initialData?.mode_of_action || '')
   const [applicationMethod, setApplicationMethod] = useState(initialData?.application_method || '')
   const [dosage, setDosage] = useState(initialData?.dosage || '')
   const [safetyInfo, setSafetyInfo] = useState(initialData?.safety_info || '')
@@ -157,7 +157,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         const trimmed = selectedIngredient.trim()
         if (!selectedIngredientsRef.current.has(trimmed)) {
           selectedIngredientsRef.current.add(trimmed)
-          setModeOfAction(prev => {
+          setModeOfAction((prev: string) => {
             const newText = prev ? prev + '\n' + data.mode_of_action : data.mode_of_action
             console.log('Setting mode of action:', newText)
             return newText
@@ -447,3 +447,4 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     </form>
   )
 }
+

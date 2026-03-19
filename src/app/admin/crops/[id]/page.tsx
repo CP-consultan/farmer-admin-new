@@ -2,9 +2,9 @@
 import { notFound } from 'next/navigation'
 import { LanguageProvider } from '@/contexts/language-context'
 import ClientOnly from '@/components/client-only'
-import CropForm from '../new/crop-form'
+import CropDetailContent from './crop-detail-content'
 
-export default async function EditCropPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CropDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
@@ -19,7 +19,7 @@ export default async function EditCropPage({ params }: { params: Promise<{ id: s
   return (
     <LanguageProvider>
       <ClientOnly>
-        <CropForm initialData={crop} />
+        <CropDetailContent crop={crop} />
       </ClientOnly>
     </LanguageProvider>
   )

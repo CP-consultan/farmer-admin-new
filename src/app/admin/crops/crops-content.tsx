@@ -1,0 +1,88 @@
+﻿'use client'
+
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { DeleteButton } from './delete-button'
+import { useLanguage } from '@/contexts/language-context'
+
+interface Crop {
+  id: string
+  name: string
+  name_ur: string | null
+  common_name_en: string | null
+  category: string | null
+}
+
+interface CropsContentProps {
+  crops: Crop[]
+}
+
+export default function CropsContent({ crops }: CropsContentProps) {
+  const { t } = useLanguage()
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">{t('crops.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('crops.description')}</p>
+        </div>
+        <Link href="/admin/crops/new">
+          <Button>{t('crops.add_new')}</Button>
+        </Link>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('crops.table.name')}</TableHead>
+              <TableHead>{t('crops.table.name_ur')}</TableHead>
+              <TableHead>{t('crops.table.common_name_en')}</TableHead>
+              <TableHead>{t('crops.table.category')}</TableHead>
+              <TableHead className="text-right">{t('crops.table.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {crops?.map((crop) => (
+              <TableRow key={crop.id}>
+                <TableCell className="font-medium">
+                  <Link
+                    href={`/admin/crops/${crop.id}`}
+                    className="hover:underline hover:text-blue-600 transition-colors"
+                  >
+                    {crop.name}
+                  </Link>
+                </TableCell>
+                <TableCell>{crop.name_ur || '-'}</TableCell>
+                <TableCell>{crop.common_name_en || '-'}</TableCell>
+                <TableCell className="capitalize">{crop.category || '-'}</TableCell>
+                <TableCell className="text-right space-x-2">
+                  <Link href={`/admin/crops/${crop.id}/edit`}>
+                    <Button variant="outline" size="sm">{t('crops.edit')}</Button>
+                  </Link>
+                  <DeleteButton id={crop.id} />
+                </TableCell>
+              </TableRow>
+            ))}
+            {(!crops || crops.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  {t('crops.no_crops')}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}

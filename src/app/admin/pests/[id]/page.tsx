@@ -2,24 +2,24 @@
 import { notFound } from 'next/navigation'
 import { LanguageProvider } from '@/contexts/language-context'
 import ClientOnly from '@/components/client-only'
-import CropForm from '../new/crop-form'
+import PestDetailContent from './pest-detail-content'
 
-export default async function EditCropPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: crop } = await supabase
-    .from('crops')
+  const { data: pest } = await supabase
+    .from('pests')
     .select('*')
     .eq('id', id)
     .single()
 
-  if (!crop) notFound()
+  if (!pest) notFound()
 
   return (
     <LanguageProvider>
       <ClientOnly>
-        <CropForm initialData={crop} />
+        <PestDetailContent pest={pest} />
       </ClientOnly>
     </LanguageProvider>
   )

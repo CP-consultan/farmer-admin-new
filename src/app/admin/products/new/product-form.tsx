@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { MultiSelect } from '@/components/multi-select'
 import ActiveIngredientInput from '@/components/active-ingredient-input'
 import { ReadFormButton } from '@/components/read-form-button'
+import { useLanguage } from '@/contexts/language-context'
 
 interface Pest {
   id: string
@@ -71,6 +72,7 @@ const subTypeToCategory: Record<string, string> = {
 }
 
 export default function ProductForm({ pests, crops, initialData }: ProductFormProps) {
+  const { t } = useLanguage()
   const [name, setName] = useState(initialData?.name || '')
   const [type, setType] = useState(initialData?.type || '')
   const [subType, setSubType] = useState(initialData?.sub_type || '')
@@ -110,15 +112,15 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
   const getFormSections = () => {
     const sections = [
-      { label: 'Product Name', value: name },
-      { label: 'Type', value: type },
-      { label: 'Sub‑Type', value: subType },
-      { label: 'Active Ingredient', value: activeIngredient },
-      { label: 'Mode of Action', value: modeOfAction },
-      { label: 'Application Method', value: applicationMethod },
-      { label: 'Dosage', value: dosage },
-      { label: 'Safety Information', value: safetyInfo },
-      { label: 'Manufacturer', value: manufacturer },
+      { label: t('product_form.product_name'), value: name },
+      { label: t('product_form.type'), value: type },
+      { label: t('product_form.subtype'), value: subType },
+      { label: t('product_form.active_ingredient'), value: activeIngredient },
+      { label: t('product_form.mode_of_action'), value: modeOfAction },
+      { label: t('product_form.application_method'), value: applicationMethod },
+      { label: t('product_form.dosage'), value: dosage },
+      { label: t('product_form.safety_info'), value: safetyInfo },
+      { label: t('product_form.manufacturer'), value: manufacturer },
     ]
     if (selectedPests.length > 0) {
       const pestNames = selectedPests
@@ -126,7 +128,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         .filter(p => p)
         .map(p => p!.scientific_name)
         .join(', ')
-      sections.push({ label: 'Target Pests', value: pestNames })
+      sections.push({ label: t('product_form.target_pests'), value: pestNames })
     }
     if (selectedCrops.length > 0) {
       const cropNames = selectedCrops
@@ -134,7 +136,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         .filter(c => c)
         .map(c => c!.name)
         .join(', ')
-      sections.push({ label: 'Applicable Crops', value: cropNames })
+      sections.push({ label: t('product_form.applicable_crops'), value: cropNames })
     }
     return sections
   }
@@ -225,20 +227,22 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">{initialData ? 'Edit Product' : 'Add New Product'}</h2>
+        <h2 className="text-2xl font-bold">
+          {initialData ? t('product_form.title_edit') : t('product_form.title_new')}
+        </h2>
         <ReadFormButton sections={getFormSections()} />
       </div>
 
       <div>
-        <Label>Product Name *</Label>
+        <Label>{t('product_form.product_name')}</Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
 
       <div>
-        <Label>Type *</Label>
+        <Label>{t('product_form.type')}</Label>
         <Select value={type} onValueChange={(val) => { setType(val); setSubType(''); setSelectedPests([]); }} required>
           <SelectTrigger>
-            <SelectValue placeholder="Select type" />
+            <SelectValue placeholder={t('product_form.select_type_placeholder')} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="pesticide">Pesticide</SelectItem>
@@ -249,10 +253,10 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
       {type && (
         <div>
-          <Label>Sub‑Type</Label>
+          <Label>{t('product_form.subtype')}</Label>
           <Select value={subType} onValueChange={setSubType}>
             <SelectTrigger>
-              <SelectValue placeholder={`Select ${type} sub‑type`} />
+              <SelectValue placeholder={t('product_form.select_subtype_placeholder').replace('{type}', type)} />
             </SelectTrigger>
             <SelectContent>
               {subTypeOptions.map((opt) => (
@@ -269,12 +273,12 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         value={activeIngredient}
         onChange={setActiveIngredient}
         onModeOfActionFetched={setModeOfAction}
-        label="Active Ingredient"
+        label={t('product_form.active_ingredient')}
         category={subType}
       />
 
       <div>
-        <Label>Mode of Action</Label>
+        <Label>{t('product_form.mode_of_action')}</Label>
         <Textarea
           value={modeOfAction}
           onChange={(e) => setModeOfAction(e.target.value)}
@@ -283,23 +287,23 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       </div>
 
       <MultiSelect
-        label="Target Pests"
+        label={t('product_form.target_pests')}
         options={pestOptions}
         selected={selectedPests}
         onChange={setSelectedPests}
-        placeholder="Select pests..."
+        placeholder={t('product_form.select_pests_placeholder')}
       />
 
       <MultiSelect
-        label="Applicable Crops"
+        label={t('product_form.applicable_crops')}
         options={cropOptions}
         selected={selectedCrops}
         onChange={setSelectedCrops}
-        placeholder="Select crops..."
+        placeholder={t('product_form.select_crops_placeholder')}
       />
 
       <div>
-        <Label>Application Method</Label>
+        <Label>{t('product_form.application_method')}</Label>
         <Textarea
           value={applicationMethod}
           onChange={(e) => setApplicationMethod(e.target.value)}
@@ -308,16 +312,16 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       </div>
 
       <div>
-        <Label>Dosage</Label>
+        <Label>{t('product_form.dosage')}</Label>
         <Input
           value={dosage}
           onChange={(e) => setDosage(e.target.value)}
-          placeholder="e.g., 2 ml/L"
+          placeholder={t('product_form.dosage_placeholder')}
         />
       </div>
 
       <div>
-        <Label>Safety Information</Label>
+        <Label>{t('product_form.safety_info')}</Label>
         <Textarea
           value={safetyInfo}
           onChange={(e) => setSafetyInfo(e.target.value)}
@@ -326,7 +330,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       </div>
 
       <div>
-        <Label>Manufacturer</Label>
+        <Label>{t('product_form.manufacturer')}</Label>
         <Input
           value={manufacturer}
           onChange={(e) => setManufacturer(e.target.value)}
@@ -334,7 +338,10 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       </div>
 
       <Button type="submit" disabled={loading}>
-        {loading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Product' : 'Create Product')}
+        {loading
+          ? (initialData ? t('product_form.submit_updating') : t('product_form.submit_creating'))
+          : (initialData ? t('product_form.submit_update') : t('product_form.submit_create'))
+        }
       </Button>
     </form>
   )

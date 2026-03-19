@@ -63,7 +63,7 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
         const productIds = links.map(l => l.product_id)
         const { data: prods } = await supabase
           .from('agrochemicals')
-          .select('id, name, sub_type, active_ingredient, dosage, application_method')
+          .select('id, name, type, sub_type, active_ingredient, dosage, application_method')
           .in('id', productIds)
           .order('name')
         setRecommendedProducts(prods || [])

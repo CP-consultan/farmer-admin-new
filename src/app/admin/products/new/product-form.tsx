@@ -259,7 +259,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         selected={selectedPests}
         onChange={setSelectedPests}
         placeholder="Select pests..."
-        emptyMessage="No pests match the selected sub‑type"
       />
 
       <MultiSelect

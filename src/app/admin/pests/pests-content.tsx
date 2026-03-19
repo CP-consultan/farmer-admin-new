@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { DeleteButton } from './delete-button'
 import { useLanguage } from '@/contexts/language-context'
+import { EditableCell } from '@/components/editable-cell'
 
 interface Pest {
   id: string
@@ -25,8 +26,14 @@ interface PestsContentProps {
   pests: Pest[]
 }
 
+const categories = ['weed', 'insect', 'fungus', 'bacteria', 'nematode', 'mite', 'virus', 'other']
+
 export default function PestsContent({ pests }: PestsContentProps) {
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
+
+  const refreshPage = () => {
+    window.location.reload()
+  }
 
   return (
     <div className="space-y-6">
@@ -62,9 +69,35 @@ export default function PestsContent({ pests }: PestsContentProps) {
                     {pest.scientific_name}
                   </Link>
                 </TableCell>
-                <TableCell>{pest.common_name_en || '-'}</TableCell>
-                <TableCell>{pest.common_name_ur || '-'}</TableCell>
-                <TableCell className="capitalize">{pest.category || '-'}</TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={pest.common_name_en}
+                    rowId={pest.id}
+                    table="pests"
+                    column="common_name_en"
+                    onUpdate={refreshPage}
+                  />
+                </TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={pest.common_name_ur}
+                    rowId={pest.id}
+                    table="pests"
+                    column="common_name_ur"
+                    onUpdate={refreshPage}
+                  />
+                </TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={pest.category}
+                    rowId={pest.id}
+                    table="pests"
+                    column="category"
+                    type="select"
+                    options={categories}
+                    onUpdate={refreshPage}
+                  />
+                </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Link href={`/admin/pests/${pest.id}/edit`}>
                     <Button variant="outline" size="sm">{t('pests.edit')}</Button>

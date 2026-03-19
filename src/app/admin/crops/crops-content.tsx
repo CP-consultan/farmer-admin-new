@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { DeleteButton } from './delete-button'
 import { useLanguage } from '@/contexts/language-context'
+import { EditableCell } from '@/components/editable-cell'
 
 interface Crop {
   id: string
@@ -25,8 +26,15 @@ interface CropsContentProps {
   crops: Crop[]
 }
 
+const categories = ['cereal', 'vegetable', 'fruit', 'legume', 'oilseed', 'fiber', 'other']
+
 export default function CropsContent({ crops }: CropsContentProps) {
   const { t } = useLanguage()
+
+  const refreshPage = () => {
+    // Trigger a re-fetch by updating a state or using router.refresh()
+    window.location.reload()
+  }
 
   return (
     <div className="space-y-6">
@@ -62,9 +70,35 @@ export default function CropsContent({ crops }: CropsContentProps) {
                     {crop.name}
                   </Link>
                 </TableCell>
-                <TableCell>{crop.name_ur || '-'}</TableCell>
-                <TableCell>{crop.common_name_en || '-'}</TableCell>
-                <TableCell className="capitalize">{crop.category || '-'}</TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={crop.name_ur}
+                    rowId={crop.id}
+                    table="crops"
+                    column="name_ur"
+                    onUpdate={refreshPage}
+                  />
+                </TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={crop.common_name_en}
+                    rowId={crop.id}
+                    table="crops"
+                    column="common_name_en"
+                    onUpdate={refreshPage}
+                  />
+                </TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={crop.category}
+                    rowId={crop.id}
+                    table="crops"
+                    column="category"
+                    type="select"
+                    options={categories}
+                    onUpdate={refreshPage}
+                  />
+                </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Link href={`/admin/crops/${crop.id}/edit`}>
                     <Button variant="outline" size="sm">{t('crops.edit')}</Button>

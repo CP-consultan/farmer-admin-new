@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { DeleteButton } from './delete-button'
 import { useLanguage } from '@/contexts/language-context'
+import { EditableCell } from '@/components/editable-cell'
 
 interface Advisory {
   id: string
@@ -31,6 +32,19 @@ interface AdvisoriesContentProps {
 
 export default function AdvisoriesContent({ advisories }: AdvisoriesContentProps) {
   const { t, language } = useLanguage()
+
+  const refreshPage = () => {
+    window.location.reload()
+  }
+
+  const getPestDisplay = (pest: Advisory['pests']) => {
+    if (language === 'ur' && pest?.common_name_ur) {
+      return `${pest.scientific_name} (${pest.common_name_ur})`
+    }
+    return pest?.common_name_en 
+      ? `${pest.scientific_name} (${pest.common_name_en})`
+      : pest?.scientific_name
+  }
 
   return (
     <div className="space-y-6">
@@ -58,11 +72,26 @@ export default function AdvisoriesContent({ advisories }: AdvisoriesContentProps
             {advisories?.map((adv) => (
               <TableRow key={adv.id}>
                 <TableCell className="font-medium">
-                  {adv.pests?.scientific_name || ''}
-                  {adv.pests?.common_name_en ? ` (${adv.pests.common_name_en})` : ''}
+                  {adv.pests ? getPestDisplay(adv.pests) : '—'}
                 </TableCell>
-                <TableCell>{adv.title}</TableCell>
-                <TableCell>{adv.title_ur || '-'}</TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={adv.title}
+                    rowId={adv.id}
+                    table="advisories"
+                    column="title"
+                    onUpdate={refreshPage}
+                  />
+                </TableCell>
+                <TableCell>
+                  <EditableCell
+                    value={adv.title_ur}
+                    rowId={adv.id}
+                    table="advisories"
+                    column="title_ur"
+                    onUpdate={refreshPage}
+                  />
+                </TableCell>
                 <TableCell className="text-right space-x-2">
                   <Link href={`/admin/advisories/${adv.id}/edit`}>
                     <Button variant="outline" size="sm">{t('advisories.edit')}</Button>

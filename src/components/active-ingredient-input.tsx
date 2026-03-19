@@ -11,6 +11,7 @@ interface ActiveIngredientInputProps {
   value: string
   onChange: (value: string) => void
   onModeOfActionFetched?: (modeOfAction: string) => void
+  onSelect?: (ingredient: string) => void
   label?: string
   placeholder?: string
   category?: string
@@ -20,6 +21,7 @@ export default function ActiveIngredientInput({
   value,
   onChange,
   onModeOfActionFetched,
+  onSelect,
   label = 'Active Ingredient',
   placeholder = 'Search active ingredients...',
   category
@@ -29,7 +31,6 @@ export default function ActiveIngredientInput({
   const [searchTerm, setSearchTerm] = useState(value)
   const [loading, setLoading] = useState(false)
 
-  // Update searchTerm when value changes externally
   useEffect(() => {
     setSearchTerm(value)
   }, [value])
@@ -72,6 +73,8 @@ export default function ActiveIngredientInput({
       const data = await response.json()
       if (data.mode_of_action) {
         onModeOfActionFetched?.(data.mode_of_action)
+      } else {
+        console.log('No mode of action returned for', ingredient)
       }
     } catch (error) {
       console.error('Error fetching mode of action:', error)
@@ -79,10 +82,12 @@ export default function ActiveIngredientInput({
   }
 
   const handleSelect = (selectedValue: string) => {
+    console.log('Selected ingredient:', selectedValue)
     onChange(selectedValue)
     setSearchTerm(selectedValue)
     setOpen(false)
     fetchModeOfAction(selectedValue)
+    onSelect?.(selectedValue)
   }
 
   return (
@@ -104,10 +109,6 @@ export default function ActiveIngredientInput({
           className="w-[--radix-popover-trigger-width] p-0" 
           align="start" 
           sideOffset={5}
-          onInteractOutside={(e) => {
-            // Prevent closing when clicking inside the popover
-            e.preventDefault();
-          }}
         >
           <Command>
             <CommandInput
@@ -126,7 +127,7 @@ export default function ActiveIngredientInput({
                     key={suggestion}
                     value={suggestion}
                     onSelect={() => handleSelect(suggestion)}
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:bg-accent"
                   >
                     <Check
                       className={cn(

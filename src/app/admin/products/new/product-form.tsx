@@ -77,7 +77,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   const [nameUr, setNameUr] = useState(initialData?.name_ur || '')
   const [type, setType] = useState(initialData?.type || '')
   const [subType, setSubType] = useState(initialData?.sub_type || '')
-  // Multi-line active ingredients
   const [activeIngredients, setActiveIngredients] = useState<string[]>(() => {
     if (initialData?.active_ingredient) {
       return initialData.active_ingredient.split('\n').filter((line: string) => line.trim() !== '')
@@ -95,7 +94,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   const router = useRouter()
   const supabase = createClient()
 
-  // Track which ingredients have been selected to avoid duplicate mode of action appending
   const selectedIngredientsRef = useRef<Set<string>>(new Set())
 
   const subTypeOptions = type === 'pesticide' ? pesticideSubTypes : fertilizerSubTypes
@@ -120,7 +118,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     label: c.common_name_en ? `${c.name} (${c.common_name_en})` : c.name
   }))
 
-  // Handlers for multi-line active ingredients
   const addActiveIngredientLine = () => {
     setActiveIngredients([...activeIngredients, ''])
   }
@@ -129,8 +126,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     const ingredientToRemove = activeIngredients[index]
     const newLines = activeIngredients.filter((_, i) => i !== index)
     setActiveIngredients(newLines.length ? newLines : [''])
-
-    // Remove from selected set to allow re-adding later
     if (ingredientToRemove && ingredientToRemove.trim() !== '') {
       selectedIngredientsRef.current.delete(ingredientToRemove.trim())
     }
@@ -141,8 +136,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     const newLines = [...activeIngredients]
     newLines[index] = value
     setActiveIngredients(newLines)
-
-    // If the value changed, update the selected set
     if (oldValue && oldValue.trim() !== '' && oldValue !== value) {
       selectedIngredientsRef.current.delete(oldValue.trim())
     }
@@ -152,31 +145,28 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     return activeIngredients.filter(line => line.trim() !== '').join('\n')
   }
 
-  // When an ingredient is selected from the dropdown, update the line and fetch mode of action
-  const handleIngredientSelect = (index: number, selectedIngredient: string) => {
-    // Update the line value
+  const handleIngredientSelect = async (index: number, selectedIngredient: string) => {
+    console.log('handleIngredientSelect', index, selectedIngredient)
     updateActiveIngredientLine(index, selectedIngredient)
 
-    // Fetch mode of action and append if new
-    const fetchModeOfAction = async () => {
-      try {
-        const response = await fetch(`/api/mode-of-action?ingredient=${encodeURIComponent(selectedIngredient)}`)
-        const data = await response.json()
-        if (data.mode_of_action) {
-          const trimmedIngredient = selectedIngredient.trim()
-          if (!selectedIngredientsRef.current.has(trimmedIngredient)) {
-            selectedIngredientsRef.current.add(trimmedIngredient)
-            setModeOfAction(prev => {
-              const newText = prev ? prev + '\n' + data.mode_of_action : data.mode_of_action
-              return newText
-            })
-          }
+    try {
+      const response = await fetch(`/api/mode-of-action?ingredient=${encodeURIComponent(selectedIngredient)}`)
+      const data = await response.json()
+      console.log('Mode of action response:', data)
+      if (data.mode_of_action) {
+        const trimmed = selectedIngredient.trim()
+        if (!selectedIngredientsRef.current.has(trimmed)) {
+          selectedIngredientsRef.current.add(trimmed)
+          setModeOfAction(prev => {
+            const newText = prev ? prev + '\n' + data.mode_of_action : data.mode_of_action
+            console.log('Setting mode of action:', newText)
+            return newText
+          })
         }
-      } catch (error) {
-        console.error('Error fetching mode of action:', error)
       }
+    } catch (error) {
+      console.error('Error fetching mode of action:', error)
     }
-    fetchModeOfAction()
   }
 
   const getFormSections = () => {
@@ -354,8 +344,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
                 value={line}
                 onChange={(newValue) => updateActiveIngredientLine(index, newValue)}
                 onSelect={(selected) => handleIngredientSelect(index, selected)}
-                // Disable automatic mode of action fetch to avoid double
-                onModeOfActionFetched={() => {}}
+                onModeOfActionFetched={() => {}} // disable internal fetch
                 label={`Active Ingredient ${index + 1}`}
                 placeholder={`Search active ingredient ${index + 1}...`}
                 category={subType}

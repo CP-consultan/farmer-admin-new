@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { MultiSelect } from '@/components/multi-select'
 import ActiveIngredientInput from '@/components/active-ingredient-input'
+import { ReadFormButton } from '@/components/read-form-button'
 
 interface Pest {
   id: string
@@ -60,7 +61,6 @@ const fertilizerSubTypes = [
   'Bio‑fertilizer'
 ]
 
-// Map sub‑types to pest categories
 const subTypeToCategory: Record<string, string> = {
   Herbicide: 'weed',
   Insecticide: 'insect',
@@ -68,7 +68,6 @@ const subTypeToCategory: Record<string, string> = {
   Bactericide: 'bacteria',
   Nematicide: 'nematode',
   Acaricide: 'mite',
-  // add others as needed
 }
 
 export default function ProductForm({ pests, crops, initialData }: ProductFormProps) {
@@ -89,16 +88,14 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
   const subTypeOptions = type === 'pesticide' ? pesticideSubTypes : fertilizerSubTypes
 
-  // Filter pests based on sub‑type category
   const filteredPests = useMemo(() => {
     if (!subType || !subTypeToCategory[subType]) {
-      return pests // show all if no mapping
+      return pests
     }
     const targetCategory = subTypeToCategory[subType]
     return pests.filter(p => p.category?.toLowerCase() === targetCategory.toLowerCase())
   }, [pests, subType])
 
-  // Convert to options format for MultiSelect
   const pestOptions = filteredPests.map(p => ({
     id: p.id,
     label: p.common_name_en
@@ -110,6 +107,37 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     id: c.id,
     label: c.common_name_en ? `${c.name} (${c.common_name_en})` : c.name
   }))
+
+  const getFormSections = () => {
+    const sections = [
+      { label: 'Product Name', value: name },
+      { label: 'Type', value: type },
+      { label: 'Sub‑Type', value: subType },
+      { label: 'Active Ingredient', value: activeIngredient },
+      { label: 'Mode of Action', value: modeOfAction },
+      { label: 'Application Method', value: applicationMethod },
+      { label: 'Dosage', value: dosage },
+      { label: 'Safety Information', value: safetyInfo },
+      { label: 'Manufacturer', value: manufacturer },
+    ]
+    if (selectedPests.length > 0) {
+      const pestNames = selectedPests
+        .map(id => filteredPests.find(p => p.id === id))
+        .filter(p => p)
+        .map(p => p!.scientific_name)
+        .join(', ')
+      sections.push({ label: 'Target Pests', value: pestNames })
+    }
+    if (selectedCrops.length > 0) {
+      const cropNames = selectedCrops
+        .map(id => crops.find(c => c.id === id))
+        .filter(c => c)
+        .map(c => c!.name)
+        .join(', ')
+      sections.push({ label: 'Applicable Crops', value: cropNames })
+    }
+    return sections
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -129,18 +157,15 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
     try {
       if (initialData) {
-        // Update product
         const { error: updateError } = await supabase
           .from('agrochemicals')
           .update(productData)
           .eq('id', initialData.id)
         if (updateError) throw updateError
 
-        // Delete old relationships
         await supabase.from('product_pests').delete().eq('product_id', initialData.id)
         await supabase.from('product_crops').delete().eq('product_id', initialData.id)
 
-        // Insert new relationships
         if (selectedPests.length > 0) {
           const pestInserts = selectedPests.map(pestId => ({
             product_id: initialData.id,
@@ -161,7 +186,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
         alert('Product updated successfully!')
       } else {
-        // Create new product
         const { data: newProduct, error: insertError } = await supabase
           .from('agrochemicals')
           .insert([productData])
@@ -200,6 +224,11 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">{initialData ? 'Edit Product' : 'Add New Product'}</h2>
+        <ReadFormButton sections={getFormSections()} />
+      </div>
+
       <div>
         <Label>Product Name *</Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} required />

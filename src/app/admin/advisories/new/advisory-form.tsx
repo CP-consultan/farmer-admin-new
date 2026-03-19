@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ReadFormButton } from '@/components/read-form-button'
 
 interface Pest {
   id: string
@@ -53,31 +54,19 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
         return
       }
 
-      const { data: links, error: linksError } = await supabase
+      const { data: links } = await supabase
         .from('product_pests')
         .select('product_id')
         .eq('pest_id', selectedPestId)
 
-      if (linksError) {
-        console.error('Error fetching product links:', linksError)
-        setRecommendedProducts([])
-        return
-      }
-
       if (links && links.length > 0) {
         const productIds = links.map(l => l.product_id)
-        const { data: prods, error: prodsError } = await supabase
+        const { data: prods } = await supabase
           .from('agrochemicals')
-          .select('id, name, type, sub_type, active_ingredient, dosage, application_method')
+          .select('id, name, sub_type, active_ingredient, dosage, application_method')
           .in('id', productIds)
           .order('name')
-
-        if (prodsError) {
-          console.error('Error fetching products:', prodsError)
-          setRecommendedProducts([])
-        } else {
-          setRecommendedProducts(prods || [])
-        }
+        setRecommendedProducts(prods || [])
       } else {
         setRecommendedProducts([])
       }
@@ -102,6 +91,27 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
     setChemicalControl(`Recommended products: ${lines.join('; ')}`)
   }, [selectedProducts, recommendedProducts])
 
+  const getFormSections = () => {
+    const selectedPest = pests.find(p => p.id === selectedPestId)
+    const sections = [
+      { label: 'Pest', value: selectedPest ? selectedPest.scientific_name : '' },
+      { label: 'Title', value: title },
+      { label: 'Description', value: description },
+      { label: 'Chemical Control', value: chemicalControl },
+      { label: 'Cultural Control', value: culturalControl },
+      { label: 'Biological Control', value: biologicalControl },
+    ]
+    if (selectedProducts.length > 0) {
+      const productNames = selectedProducts
+        .map(id => products.find(p => p.id === id))
+        .filter(p => p)
+        .map(p => p!.name)
+        .join(', ')
+      sections.push({ label: 'Selected Products', value: productNames })
+    }
+    return sections
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -117,11 +127,11 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
 
     try {
       if (initialData) {
-        const { error: updateError } = await supabase
+        const { error } = await supabase
           .from('advisories')
           .update(advisoryData)
           .eq('id', initialData.id)
-        if (updateError) throw updateError
+        if (error) throw error
 
         await supabase.from('advisory_products').delete().eq('advisory_id', initialData.id)
 
@@ -133,15 +143,13 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
           const { error: relError } = await supabase.from('advisory_products').insert(productInserts)
           if (relError) throw relError
         }
-
-        alert('Advisory updated successfully!')
       } else {
-        const { data: newAdvisory, error: insertError } = await supabase
+        const { data: newAdvisory, error } = await supabase
           .from('advisories')
           .insert([advisoryData])
           .select()
           .single()
-        if (insertError) throw insertError
+        if (error) throw error
 
         if (selectedProducts.length > 0) {
           const productInserts = selectedProducts.map(pid => ({
@@ -151,8 +159,6 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
           const { error: relError } = await supabase.from('advisory_products').insert(productInserts)
           if (relError) throw relError
         }
-
-        alert('Advisory created successfully!')
       }
       router.push('/admin/advisories')
     } catch (error: any) {
@@ -165,12 +171,19 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
 
   const toggleProduct = (productId: string) => {
     setSelectedProducts(prev =>
-      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
     )
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">{initialData ? 'Edit Advisory' : 'Add New Advisory'}</h2>
+        <ReadFormButton sections={getFormSections()} />
+      </div>
+
       <div>
         <Label>Select Pest</Label>
         <Select value={selectedPestId} onValueChange={setSelectedPestId} required>
@@ -213,7 +226,7 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
                 />
                 <label
                   htmlFor={`product-${product.id}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm font-medium leading-none"
                 >
                   {product.name}
                   {product.sub_type && <span className="ml-2 text-xs text-muted-foreground">({product.sub_type})</span>}
@@ -235,9 +248,6 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
           rows={3}
           placeholder="Chemical control recommendations (auto‑filled from selected products)"
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          This field updates automatically when you select/deselect products. You can edit it manually if needed.
-        </p>
       </div>
 
       <div>

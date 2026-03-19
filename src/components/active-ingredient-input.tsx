@@ -100,7 +100,15 @@ export default function ActiveIngredientInput({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
+        <PopoverContent 
+          className="w-[--radix-popover-trigger-width] p-0" 
+          align="start" 
+          sideOffset={5}
+          onInteractOutside={(e) => {
+            // Prevent closing when clicking inside the popover
+            e.preventDefault();
+          }}
+        >
           <Command>
             <CommandInput
               placeholder={placeholder}
@@ -118,6 +126,7 @@ export default function ActiveIngredientInput({
                     key={suggestion}
                     value={suggestion}
                     onSelect={() => handleSelect(suggestion)}
+                    className="cursor-pointer"
                   >
                     <Check
                       className={cn(

@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { MultiSelect } from '@/components/multi-select'
 import { ReadFormButton } from '@/components/read-form-button'
+import ActiveIngredientInput from '@/components/active-ingredient-input'
 import { useLanguage } from '@/contexts/language-context'
 
 interface Pest {
@@ -94,9 +95,11 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   const router = useRouter()
   const supabase = createClient()
 
+  // Track which ingredients have been selected to avoid duplicate mode of action appending
+  const selectedIngredientsRef = useRef<Set<string>>(new Set())
+
   const subTypeOptions = type === 'pesticide' ? pesticideSubTypes : fertilizerSubTypes
 
-  // Filter pests based on selected sub-type (if applicable)
   const filteredPests = useMemo(() => {
     if (!subType || !subTypeToCategory[subType]) {
       return pests
@@ -117,24 +120,63 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     label: c.common_name_en ? `${c.name} (${c.common_name_en})` : c.name
   }))
 
-  // Multi-line active ingredient handlers
+  // Handlers for multi-line active ingredients
   const addActiveIngredientLine = () => {
     setActiveIngredients([...activeIngredients, ''])
   }
 
   const removeActiveIngredientLine = (index: number) => {
+    const ingredientToRemove = activeIngredients[index]
     const newLines = activeIngredients.filter((_, i) => i !== index)
     setActiveIngredients(newLines.length ? newLines : [''])
+
+    // Remove from selected set to allow re-adding later
+    if (ingredientToRemove && ingredientToRemove.trim() !== '') {
+      selectedIngredientsRef.current.delete(ingredientToRemove.trim())
+    }
   }
 
   const updateActiveIngredientLine = (index: number, value: string) => {
+    const oldValue = activeIngredients[index]
     const newLines = [...activeIngredients]
     newLines[index] = value
     setActiveIngredients(newLines)
+
+    // If the value changed, update the selected set
+    if (oldValue && oldValue.trim() !== '' && oldValue !== value) {
+      selectedIngredientsRef.current.delete(oldValue.trim())
+    }
   }
 
   const getCombinedActiveIngredient = () => {
     return activeIngredients.filter(line => line.trim() !== '').join('\n')
+  }
+
+  // When an ingredient is selected from the dropdown, update the line and fetch mode of action
+  const handleIngredientSelect = (index: number, selectedIngredient: string) => {
+    // Update the line value
+    updateActiveIngredientLine(index, selectedIngredient)
+
+    // Fetch mode of action and append if new
+    const fetchModeOfAction = async () => {
+      try {
+        const response = await fetch(`/api/mode-of-action?ingredient=${encodeURIComponent(selectedIngredient)}`)
+        const data = await response.json()
+        if (data.mode_of_action) {
+          const trimmedIngredient = selectedIngredient.trim()
+          if (!selectedIngredientsRef.current.has(trimmedIngredient)) {
+            selectedIngredientsRef.current.add(trimmedIngredient)
+            setModeOfAction(prev => {
+              const newText = prev ? prev + '\n' + data.mode_of_action : data.mode_of_action
+              return newText
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching mode of action:', error)
+      }
+    }
+    fetchModeOfAction()
   }
 
   const getFormSections = () => {
@@ -303,23 +345,29 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label>{t('product_form.active_ingredient')} (one per line)</Label>
+      <div className="space-y-4">
+        <Label>{t('product_form.active_ingredient')}</Label>
         {activeIngredients.map((line, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <Input
-              value={line}
-              onChange={(e) => updateActiveIngredientLine(index, e.target.value)}
-              placeholder={`Active ingredient ${index + 1}`}
-              className="flex-1"
-            />
+          <div key={index} className="flex items-start gap-2">
+            <div className="flex-1">
+              <ActiveIngredientInput
+                value={line}
+                onChange={(newValue) => updateActiveIngredientLine(index, newValue)}
+                onSelect={(selected) => handleIngredientSelect(index, selected)}
+                // Disable automatic mode of action fetch to avoid double
+                onModeOfActionFetched={() => {}}
+                label={`Active Ingredient ${index + 1}`}
+                placeholder={`Search active ingredient ${index + 1}...`}
+                category={subType}
+              />
+            </div>
             {activeIngredients.length > 1 && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => removeActiveIngredientLine(index)}
-                className="text-red-500"
+                className="mt-8 text-red-500"
               >
                 ✕
               </Button>
@@ -331,12 +379,12 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
           variant="outline"
           size="sm"
           onClick={addActiveIngredientLine}
-          className="mt-1"
+          className="mt-2"
         >
           + Add another active ingredient
         </Button>
         <p className="text-xs text-muted-foreground">
-          Enter each active ingredient on a separate line.
+          Each active ingredient has autocomplete. Selecting a new ingredient will append its mode of action.
         </p>
       </div>
 
@@ -346,7 +394,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
           value={modeOfAction}
           onChange={(e) => setModeOfAction(e.target.value)}
           rows={3}
-          placeholder="Describe the mode of action (can include multiple if needed)"
+          placeholder="Mode of action will be appended for each new ingredient."
         />
       </div>
 

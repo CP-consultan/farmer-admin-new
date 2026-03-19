@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ReadFormButton } from '@/components/read-form-button'
 import { useLanguage } from '@/contexts/language-context'
+import { Loader2 } from 'lucide-react'
 
 interface Pest {
   id: string
@@ -52,6 +53,13 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
   const [selectedProducts, setSelectedProducts] = useState<string[]>(initialData?.products || [])
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
+  const [translating, setTranslating] = useState({
+    chemical: false,
+    biological: false,
+    cultural: false,
+    title: false,
+    description: false
+  })
   const router = useRouter()
   const supabase = createClient()
 
@@ -74,8 +82,7 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
           .select('id, name, type, sub_type, active_ingredient, dosage, application_method')
           .in('id', productIds)
           .order('name')
-        // Cast to Product[] to satisfy TypeScript (type is included in select)
-        setRecommendedProducts((prods || []) as Product[])
+        setRecommendedProducts(prods || [])
       } else {
         setRecommendedProducts([])
       }
@@ -97,6 +104,61 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
     })
     setChemicalControl(`Recommended products: ${lines.join('; ')}`)
   }, [selectedProducts, recommendedProducts])
+
+  const handleTranslate = async (field: 'chemical' | 'biological' | 'cultural' | 'title' | 'description') => {
+    let sourceText = ''
+    let targetSetter: (value: string) => void
+
+    switch (field) {
+      case 'chemical':
+        sourceText = chemicalControl
+        targetSetter = setChemicalControlUr
+        break
+      case 'biological':
+        sourceText = biologicalControl
+        targetSetter = setBiologicalControlUr
+        break
+      case 'cultural':
+        sourceText = culturalControl
+        targetSetter = setCulturalControlUr
+        break
+      case 'title':
+        sourceText = title
+        targetSetter = setTitleUr
+        break
+      case 'description':
+        sourceText = description
+        targetSetter = setDescriptionUr
+        break
+      default:
+        return
+    }
+
+    if (!sourceText.trim()) {
+      alert('No text to translate.')
+      return
+    }
+
+    setTranslating(prev => ({ ...prev, [field]: true }))
+
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: sourceText })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Translation failed')
+
+      targetSetter(data.translatedText)
+    } catch (error) {
+      console.error('Translation error:', error)
+      alert('Translation failed. Please try again.')
+    } finally {
+      setTranslating(prev => ({ ...prev, [field]: false }))
+    }
+  }
 
   const getFormSections = () => {
     const selectedPest = pests.find(p => p.id === selectedPestId)
@@ -225,24 +287,61 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
         </Select>
       </div>
 
-      <div>
+      {/* Title with translate button */}
+      <div className="space-y-2">
         <Label>{t('advisory_form.title')}</Label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <div className="flex gap-2">
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="flex-1" />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleTranslate('title')}
+            disabled={!title.trim() || translating.title}
+          >
+            {translating.title ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
+        <Input
+          value={titleUr}
+          onChange={(e) => setTitleUr(e.target.value)}
+          placeholder={t('advisory_form.title_ur')}
+          dir="rtl"
+          className="urdu-text"
+        />
       </div>
 
-      <div>
-        <Label>{t('advisory_form.title_ur')}</Label>
-        <Input value={titleUr} onChange={(e) => setTitleUr(e.target.value)} />
-      </div>
-
-      <div>
+      {/* Description with translate button */}
+      <div className="space-y-2">
         <Label>{t('advisory_form.description')}</Label>
-        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-      </div>
-
-      <div>
-        <Label>{t('advisory_form.description_ur')}</Label>
-        <Textarea value={descriptionUr} onChange={(e) => setDescriptionUr(e.target.value)} rows={3} />
+        <div className="flex gap-2">
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            className="flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleTranslate('description')}
+            disabled={!description.trim() || translating.description}
+            className="self-start"
+          >
+            {translating.description ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
+        <Textarea
+          value={descriptionUr}
+          onChange={(e) => setDescriptionUr(e.target.value)}
+          rows={3}
+          placeholder={t('advisory_form.description_ur')}
+          dir="rtl"
+          className="urdu-text"
+        />
       </div>
 
       {recommendedProducts.length > 0 && (
@@ -274,57 +373,99 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
         </div>
       )}
 
-      <div>
+      {/* Chemical Control with translate button */}
+      <div className="space-y-2">
         <Label>{t('advisory_form.chemical_control')}</Label>
-        <Textarea
-          value={chemicalControl}
-          onChange={(e) => setChemicalControl(e.target.value)}
-          rows={3}
-        />
-      </div>
-
-      <div>
-        <Label>{t('advisory_form.chemical_control_ur')}</Label>
+        <div className="flex gap-2">
+          <Textarea
+            value={chemicalControl}
+            onChange={(e) => setChemicalControl(e.target.value)}
+            rows={3}
+            className="flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleTranslate('chemical')}
+            disabled={!chemicalControl.trim() || translating.chemical}
+            className="self-start"
+          >
+            {translating.chemical ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
         <Textarea
           value={chemicalControlUr}
           onChange={(e) => setChemicalControlUr(e.target.value)}
           rows={3}
+          placeholder={t('advisory_form.chemical_control_ur')}
+          dir="rtl"
+          className="urdu-text"
         />
       </div>
 
-      <div>
+      {/* Cultural Control with translate button */}
+      <div className="space-y-2">
         <Label>{t('advisory_form.cultural_control')}</Label>
-        <Textarea
-          value={culturalControl}
-          onChange={(e) => setCulturalControl(e.target.value)}
-          rows={3}
-        />
-      </div>
-
-      <div>
-        <Label>{t('advisory_form.cultural_control_ur')}</Label>
+        <div className="flex gap-2">
+          <Textarea
+            value={culturalControl}
+            onChange={(e) => setCulturalControl(e.target.value)}
+            rows={3}
+            className="flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleTranslate('cultural')}
+            disabled={!culturalControl.trim() || translating.cultural}
+            className="self-start"
+          >
+            {translating.cultural ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
         <Textarea
           value={culturalControlUr}
           onChange={(e) => setCulturalControlUr(e.target.value)}
           rows={3}
+          placeholder={t('advisory_form.cultural_control_ur')}
+          dir="rtl"
+          className="urdu-text"
         />
       </div>
 
-      <div>
+      {/* Biological Control with translate button */}
+      <div className="space-y-2">
         <Label>{t('advisory_form.biological_control')}</Label>
-        <Textarea
-          value={biologicalControl}
-          onChange={(e) => setBiologicalControl(e.target.value)}
-          rows={3}
-        />
-      </div>
-
-      <div>
-        <Label>{t('advisory_form.biological_control_ur')}</Label>
+        <div className="flex gap-2">
+          <Textarea
+            value={biologicalControl}
+            onChange={(e) => setBiologicalControl(e.target.value)}
+            rows={3}
+            className="flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleTranslate('biological')}
+            disabled={!biologicalControl.trim() || translating.biological}
+            className="self-start"
+          >
+            {translating.biological ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
         <Textarea
           value={biologicalControlUr}
           onChange={(e) => setBiologicalControlUr(e.target.value)}
           rows={3}
+          placeholder={t('advisory_form.biological_control_ur')}
+          dir="rtl"
+          className="urdu-text"
         />
       </div>
 

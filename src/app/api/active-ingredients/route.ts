@@ -1,32 +1,30 @@
-﻿import { createClient } from '@/utils/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')
-  const category = searchParams.get('category')
 
-  if (!query) {
-    return NextResponse.json({ error: 'Missing query' }, { status: 400 })
+  if (!query || query.length < 2) {
+    return NextResponse.json([])
   }
 
-  const supabase = await createClient()
-  let dbQuery = supabase
-    .from('active_ingredients')
-    .select('name')
-    .ilike('name', `%${query}%`)
-    .order('name')
-    .limit(10)
+  try {
+    // Use PubChem autocomplete API (no API key required)
+    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(query)}/json`
+    const response = await fetch(url)
+    const data = await response.json()
 
-  if (category) {
-    dbQuery = dbQuery.eq('category', category)
+    if (!data?.dictionary_terms?.compound) {
+      return NextResponse.json([])
+    }
+
+    // Extract compound names and limit to 20 results
+    const names = data.dictionary_terms.compound.slice(0, 20)
+
+    // Return in the format expected by ActiveIngredientInput
+    return NextResponse.json(names.map((name: string) => ({ name })))
+  } catch (error) {
+    console.error('PubChem fetch error:', error)
+    return NextResponse.json([])
   }
-
-  const { data, error } = await dbQuery
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(data)
 }

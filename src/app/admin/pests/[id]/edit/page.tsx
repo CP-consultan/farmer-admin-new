@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation'
 import { LanguageProvider } from '@/contexts/language-context'
 import ClientOnly from '@/components/client-only'
-import PestForm from '../../new/pest-form'
+import PestForm from '../new/pest-form'
 
 export default async function EditPestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useLanguage } from '@/contexts/language-context'
+import ScientificNameSearch from '@/components/scientific-name-search'
 
 interface PestFormProps {
   initialData?: any
@@ -24,6 +25,11 @@ export default function PestForm({ initialData }: PestFormProps) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  const handleScientificNameChange = (name: string, pestId?: string) => {
+    setScientificName(name)
+    // Optionally, if a pestId is provided, we could also pre‑fill other fields, but we'll leave that for now.
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,7 +71,14 @@ export default function PestForm({ initialData }: PestFormProps) {
 
       <div>
         <Label>{t('pest_form.scientific_name')}</Label>
-        <Input value={scientificName} onChange={(e) => setScientificName(e.target.value)} required />
+        <ScientificNameSearch
+          value={scientificName}
+          onChange={handleScientificNameChange}
+          placeholder="Search existing scientific name or type new..."
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Start typing to see suggestions from existing pests. You can also enter a new name.
+        </p>
       </div>
 
       <div>
@@ -75,7 +88,7 @@ export default function PestForm({ initialData }: PestFormProps) {
 
       <div>
         <Label>{t('pest_form.common_name_ur')}</Label>
-        <Input value={commonNameUr} onChange={(e) => setCommonNameUr(e.target.value)} />
+        <Input value={commonNameUr} onChange={(e) => setCommonNameUr(e.target.value)} dir="rtl" />
       </div>
 
       <div>

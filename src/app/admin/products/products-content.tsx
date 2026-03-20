@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { DeleteButton } from './delete-button'
 import { useLanguage } from '@/contexts/language-context'
+import { useEffect } from 'react'
 
 interface Product {
   id: string
@@ -29,6 +30,13 @@ interface ProductsContentProps {
 
 export default function ProductsContent({ products, pestCountByProduct, cropCountByProduct }: ProductsContentProps) {
   const { t } = useLanguage()
+
+  useEffect(() => {
+    console.log('ProductsContent mounted')
+    console.log('products count:', products?.length)
+    console.log('pestCountByProduct:', pestCountByProduct)
+    console.log('cropCountByProduct:', cropCountByProduct)
+  }, [products, pestCountByProduct, cropCountByProduct])
 
   const getPestCountText = (count: number) => {
     if (count === 1) return t('products.pest_count_singular').replace('{count}', count.toString())

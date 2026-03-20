@@ -20,7 +20,7 @@ export default async function ProductsPage() {
     .order('created_at', { ascending: false })
 
   if (error) {
-    return <div className="p-6 text-red-600">Error: {error.message}</div>
+    return <div className="p-6 text-red-600">Error loading products: {error.message}</div>
   }
 
   const { data: pestLinks } = await supabase

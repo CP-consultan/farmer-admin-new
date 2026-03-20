@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Papa from 'papaparse'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,6 @@ export default function ProductUploadPage() {
     setFile(selectedFile)
     setResult(null)
 
-    // Parse CSV for preview
     Papa.parse(selectedFile, {
       header: true,
       skipEmptyLines: true,
@@ -48,7 +47,7 @@ export default function ProductUploadPage() {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
-        const data = results.data
+        const data = results.data as any[]
         if (data.length === 0) {
           setResult({ success: false, message: 'CSV file is empty.' })
           setUploading(false)
@@ -142,7 +141,7 @@ export default function ProductUploadPage() {
                     {preview.map((row, idx) => (
                       <tr key={idx}>
                         {Object.values(row).map((val: any, i) => (
-                          <td key={i} className="p-2 border">{val}</td>
+                          <td key={i} className="p-2 border">{String(val)}</td>
                         ))}
                       </tr>
                     ))}

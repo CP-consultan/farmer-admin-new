@@ -14,10 +14,14 @@ import { DeleteButton } from './delete-button'
 export default async function ProductsPage() {
   const supabase = await createClient()
 
-  const { data: products } = await supabase
+  const { data: products, error } = await supabase
     .from('agrochemicals')
     .select('*')
     .order('created_at', { ascending: false })
+
+  if (error) {
+    return <div className="p-6 text-red-600">Error: {error.message}</div>
+  }
 
   const { data: pestLinks } = await supabase
     .from('product_pests')

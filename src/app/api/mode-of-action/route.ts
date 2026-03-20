@@ -1,39 +1,35 @@
-﻿import { createClient } from '@/utils/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
+import { createClient } from '@/utils/supabase/server'
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
   const ingredient = searchParams.get('ingredient')
 
   if (!ingredient) {
-    return NextResponse.json({ error: 'Missing ingredient parameter' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing ingredient' }, { status: 400 })
   }
 
   const supabase = await createClient()
+
+  // Search for existing products with this active ingredient (case‑insensitive)
   const { data, error } = await supabase
-    .from('mode_of_action_lookup')
-    .select('mode_of_action, chemical_class, main_group, target_site, source')
-    .ilike('active_ingredient', ingredient)
+    .from('agrochemicals')
+    .select('mode_of_action')
+    .ilike('active_ingredient', `%${ingredient}%`)
+    .limit(1)  // just need one sample
     .maybeSingle()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Database error:', error)
+    return NextResponse.json({ error: 'Database lookup failed' }, { status: 500 })
   }
 
-  if (!data) {
-    // Try fuzzy match - partial search
-    const { data: fuzzyData } = await supabase
-      .from('mode_of_action_lookup')
-      .select('mode_of_action, chemical_class, main_group, target_site, source')
-      .ilike('active_ingredient', `%${ingredient}%`)
-      .limit(1)
-      .maybeSingle()
-
-    if (fuzzyData) {
-      return NextResponse.json(fuzzyData)
-    }
-    return NextResponse.json({ mode_of_action: null, message: 'Mode of action not found' })
+  if (data?.mode_of_action) {
+    return NextResponse.json({ mode_of_action: data.mode_of_action })
   }
 
-  return NextResponse.json(data)
+  // Not found – return a helpful placeholder
+  return NextResponse.json({
+    mode_of_action: `[Mode of action for "${ingredient}" not yet added. Save this product to store it for future use.]`
+  })
 }

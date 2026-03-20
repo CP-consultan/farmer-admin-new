@@ -1,12 +1,12 @@
 ﻿'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Papa from 'papaparse'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Upload, CheckCircle, XCircle, FileText } from 'lucide-react'
+import { Loader2, Upload, CheckCircle, XCircle, FileText, Download } from 'lucide-react'
 
 export default function ProductUploadPage() {
   const router = useRouter()
@@ -47,7 +47,7 @@ export default function ProductUploadPage() {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
-        const data = results.data as any[]
+        const data = results.data
         if (data.length === 0) {
           setResult({ success: false, message: 'CSV file is empty.' })
           setUploading(false)
@@ -55,7 +55,7 @@ export default function ProductUploadPage() {
         }
 
         const requiredColumns = ['name', 'type']
-        const firstRow = data[0]
+        const firstRow = data[0] as any
         const missing = requiredColumns.filter(col => !(col in firstRow))
         if (missing.length) {
           setResult({ success: false, message: `Missing required columns: ${missing.join(', ')}` })
@@ -86,6 +86,27 @@ export default function ProductUploadPage() {
     })
   }
 
+  const downloadTemplate = () => {
+    const templateHeaders = [
+      'name', 'type', 'sub_type', 'active_ingredient', 'mode_of_action',
+      'application_method', 'dosage', 'safety_info', 'manufacturer',
+      'name_ur', 'active_ingredient_ur', 'mode_of_action_ur'
+    ]
+    const sampleRow = [
+      'Glyphosate', 'pesticide', 'Herbicide', 'Glyphosate', 'Inhibits EPSP synthase',
+      'Foliar spray', '2 L/ha', 'Wear protective equipment', 'Company A',
+      '', '', ''
+    ]
+    const csvContent = [templateHeaders.join(','), sampleRow.join(',')].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'product_template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="max-w-3xl mx-auto p-6">
       <Card>
@@ -96,7 +117,7 @@ export default function ProductUploadPage() {
           </CardTitle>
           <CardDescription>
             Upload a CSV file with product information. The first row must contain column headers.
-            Required: <code className="bg-muted px-1 rounded">name</code>, <code>type</code> (pesticide/fertilizer).
+            Required: <code>name</code>, <code>type</code> (pesticide/fertilizer).<br />
             Optional: sub_type, active_ingredient, mode_of_action, application_method, dosage, safety_info, manufacturer, name_ur, active_ingredient_ur, mode_of_action_ur, etc.
           </CardDescription>
         </CardHeader>
@@ -125,6 +146,11 @@ export default function ProductUploadPage() {
             )}
           </div>
 
+          <Button variant="ghost" onClick={downloadTemplate} className="w-full">
+            <Download className="mr-2 h-4 w-4" />
+            Download Sample CSV Template
+          </Button>
+
           {preview.length > 0 && (
             <div>
               <h3 className="font-medium mb-2">Preview (first 5 rows)</h3>
@@ -135,13 +161,13 @@ export default function ProductUploadPage() {
                       {Object.keys(preview[0] || {}).map(key => (
                         <th key={key} className="p-2 border text-left">{key}</th>
                       ))}
-                    </tr>
+                     </tr>
                   </thead>
                   <tbody>
                     {preview.map((row, idx) => (
                       <tr key={idx}>
                         {Object.values(row).map((val: any, i) => (
-                          <td key={i} className="p-2 border">{String(val)}</td>
+                          <td key={i} className="p-2 border">{val}</td>
                         ))}
                       </tr>
                     ))}

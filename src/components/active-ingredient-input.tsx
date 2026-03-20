@@ -31,7 +31,6 @@ export default function ActiveIngredientInput({
     setSearchTerm(value)
   }, [value])
 
-  // Fetch suggestions (from PubChem or other)
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!searchTerm || searchTerm.length < 2) {
@@ -65,8 +64,26 @@ export default function ActiveIngredientInput({
     return () => clearTimeout(timeoutId)
   }, [searchTerm, category])
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value
+    setSearchTerm(newValue)
+    onChange(newValue)
+  }
+
+  const handleSelect = (selectedValue: string) => {
+    if (selectedValue && selectedValue !== searchTerm) {
+      setSearchTerm(selectedValue)
+      onChange(selectedValue)
+      if (onSelect) {
+        onSelect(selectedValue)
+      }
+      if (onModeOfActionFetched) {
+        fetchModeOfAction(selectedValue)
+      }
+    }
+  }
+
   const fetchModeOfAction = async (ingredient: string) => {
-    if (!ingredient.trim()) return
     try {
       const response = await fetch(`/api/mode-of-action?ingredient=${encodeURIComponent(ingredient)}`)
       const data = await response.json()
@@ -78,49 +95,24 @@ export default function ActiveIngredientInput({
     }
   }
 
-  const handleSelect = (selected: string) => {
-    if (selected === searchTerm) return
-    setSearchTerm(selected)
-    onChange(selected)
-    if (onSelect) {
-      onSelect(selected)
-    } else {
-      fetchModeOfAction(selected)
-    }
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    setSearchTerm(newValue)
-    onChange(newValue)
-  }
-
+  // Handle Enter key: if there's a selection from datalist, use that; otherwise use typed text
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.preventDefault() // Prevent form submission
-      const currentValue = searchTerm
-      if (currentValue && currentValue.trim()) {
-        // Treat Enter as selection of current input value
-        setSearchTerm(currentValue)
-        onChange(currentValue)
-        if (onSelect) {
-          onSelect(currentValue)
-        } else {
-          fetchModeOfAction(currentValue)
-        }
+      e.preventDefault()  // Prevent form submission
+      const currentValue = searchTerm.trim()
+      if (currentValue) {
+        // If the value matches one of the suggestions, use it (but datalist selection already handled via onInput)
+        // Otherwise, still treat it as a selection
+        handleSelect(currentValue)
       }
     }
   }
 
-  const handleBlur = () => {
-    // If the field is not empty, consider it a selection (optional)
-    const currentValue = searchTerm
-    if (currentValue && currentValue.trim() && currentValue !== value) {
-      if (onSelect) {
-        onSelect(currentValue)
-      } else {
-        fetchModeOfAction(currentValue)
-      }
+  // When the input changes due to datalist selection, the 'onInput' event gives the selected value
+  const handleInputEvent = (e: React.FormEvent<HTMLInputElement>) => {
+    const selected = (e.target as HTMLInputElement).value
+    if (selected !== searchTerm) {
+      handleSelect(selected)
     }
   }
 
@@ -133,8 +125,8 @@ export default function ActiveIngredientInput({
           type="text"
           value={searchTerm}
           onChange={handleInputChange}
+          onInput={handleInputEvent}
           onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
           placeholder={placeholder}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           list="ingredient-suggestions"

@@ -6,20 +6,12 @@ import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ReadFormButton } from '@/components/read-form-button'
 import { useLanguage } from '@/contexts/language-context'
+import PestSearchInput from '@/components/pest-search-input'
 import { Loader2 } from 'lucide-react'
-
-interface Pest {
-  id: string
-  scientific_name: string
-  common_name_en: string | null
-  common_name_ur: string | null
-  category: string
-}
 
 interface Product {
   id: string
@@ -32,7 +24,7 @@ interface Product {
 }
 
 interface AdvisoryFormProps {
-  pests: Pest[]
+  pests: any[] // not used directly, we'll use the search component
   products: Product[]
   initialData?: any
 }
@@ -161,14 +153,8 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
   }
 
   const getFormSections = () => {
-    const selectedPest = pests.find(p => p.id === selectedPestId)
-    const pestName = selectedPest
-      ? language === 'ur' && selectedPest.common_name_ur
-        ? `${selectedPest.scientific_name} (${selectedPest.common_name_ur})`
-        : selectedPest.scientific_name
-      : ''
     const sections = [
-      { label: t('advisory_form.select_pest'), value: pestName },
+      { label: t('advisory_form.select_pest'), value: selectedPestId ? 'Selected' : 'Not selected' },
       { label: t('advisory_form.title'), value: title },
       { label: t('advisory_form.title_ur'), value: titleUr },
       { label: t('advisory_form.description'), value: description },
@@ -245,8 +231,16 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
       }
       router.push('/admin/advisories')
     } catch (error: any) {
-      alert('Error: ' + error.message)
-      console.error(error)
+      console.error('Full error object:', error)
+      if (error?.message) {
+        alert('Error: ' + error.message)
+      } else if (error?.error_description) {
+        alert('Error: ' + error.error_description)
+      } else if (typeof error === 'string') {
+        alert('Error: ' + error)
+      } else {
+        alert('An unknown error occurred. Check the console for details.')
+      }
     } finally {
       setLoading(false)
     }
@@ -269,23 +263,13 @@ export default function AdvisoryForm({ pests, products, initialData }: AdvisoryF
         <ReadFormButton sections={getFormSections()} />
       </div>
 
-      <div>
-        <Label>{t('advisory_form.select_pest')}</Label>
-        <Select value={selectedPestId} onValueChange={setSelectedPestId} required>
-          <SelectTrigger>
-            <SelectValue placeholder={t('advisory_form.select_pest_placeholder')} />
-          </SelectTrigger>
-          <SelectContent>
-            {pests.map((pest) => (
-              <SelectItem key={pest.id} value={pest.id}>
-                {pest.scientific_name}
-                {pest.common_name_en && ` (${pest.common_name_en})`}
-                {pest.common_name_ur && ` [${pest.common_name_ur}]`} – {pest.category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Use PestSearchInput instead of Select */}
+      <PestSearchInput
+        value={selectedPestId}
+        onChange={setSelectedPestId}
+        label={t('advisory_form.select_pest')}
+        placeholder="Search by common name or scientific name..."
+      />
 
       {/* Title with translate button */}
       <div className="space-y-2">

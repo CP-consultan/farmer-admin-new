@@ -25,14 +25,11 @@ export default function ActiveIngredientInput({
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState(value)
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sync internal state with prop value
   useEffect(() => {
     setSearchTerm(value)
   }, [value])
 
-  // Fetch suggestions from API (should use PubChem)
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (!searchTerm || searchTerm.length < 2) {
@@ -48,10 +45,7 @@ export default function ActiveIngredientInput({
 
         const response = await fetch(url)
         const data = await response.json()
-        console.log('Suggestions API response:', data)
-
         if (Array.isArray(data)) {
-          // Extract names from { name: ... } objects or direct strings
           const names = data.map(item => (typeof item === 'string' ? item : item.name)).filter(Boolean)
           setSuggestions(names)
         } else {
@@ -76,9 +70,7 @@ export default function ActiveIngredientInput({
   }
 
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // This fires when the user selects a suggestion from the datalist
     const selected = e.target.value
-    console.log('Selected from datalist:', selected)
     if (selected && selected !== searchTerm) {
       setSearchTerm(selected)
       onChange(selected)
@@ -95,7 +87,6 @@ export default function ActiveIngredientInput({
     try {
       const response = await fetch(`/api/mode-of-action?ingredient=${encodeURIComponent(ingredient)}`)
       const data = await response.json()
-      console.log('Mode of action response:', data)
       if (data.mode_of_action) {
         onModeOfActionFetched?.(data.mode_of_action)
       }
@@ -109,11 +100,10 @@ export default function ActiveIngredientInput({
       <label className="text-sm font-medium">{label}</label>
       <div className="relative">
         <input
-          ref={inputRef}
           type="text"
           value={searchTerm}
           onChange={handleInputChange}
-          onInput={handleSelect}
+          onBlur={handleSelect} // Use onBlur to detect when user selects from datalist (since selection updates value then blur)
           placeholder={placeholder}
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           list="ingredient-suggestions"

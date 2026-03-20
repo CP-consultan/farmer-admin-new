@@ -71,44 +71,45 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
             </TableRow>
           </TableHeader>
           <TableBody>
-            {products?.map((prod) => (
-              <TableRow key={prod.id}>
-                <TableCell className="font-medium">
-                  <Link
-                    href={`/admin/products/${prod.id}`}
-                    className="hover:underline hover:text-blue-600 transition-colors"
-                  >
-                    {prod.name}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <span className="capitalize">{prod.type}</span>
-                </TableCell>
-                <TableCell>{prod.active_ingredient || '-'}</TableCell>
-                <TableCell>
-                  {pestCountByProduct[prod.id] ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs">
-                      {getPestCountText(pestCountByProduct[prod.id])}
-                    </span>
-                  ) : '-'}
-                </TableCell>
-                <TableCell>
-                  {cropCountByProduct[prod.id] ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs">
-                      {getCropCountText(cropCountByProduct[prod.id])}
-                    </span>
-                  ) : '-'}
-                </TableCell>
-                <TableCell>{prod.manufacturer || '-'}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Link href={`/admin/products/${prod.id}/edit`}>
-                    <Button variant="outline" size="sm">{t('products.edit')}</Button>
-                  </Link>
-                  <DeleteButton id={prod.id} />
-                </TableCell>
-              </TableRow>
-            ))}
-            {(!products || products.length === 0) && (
+            {products && products.length > 0 ? (
+              products.map((prod) => (
+                <TableRow key={prod.id}>
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`/admin/products/${prod.id}`}
+                      className="hover:underline hover:text-blue-600 transition-colors"
+                    >
+                      {prod.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <span className="capitalize">{prod.type}</span>
+                  </TableCell>
+                  <TableCell>{prod.active_ingredient || '-'}</TableCell>
+                  <TableCell>
+                    {pestCountByProduct[prod.id] ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs">
+                        {getPestCountText(pestCountByProduct[prod.id])}
+                      </span>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {cropCountByProduct[prod.id] ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs">
+                        {getCropCountText(cropCountByProduct[prod.id])}
+                      </span>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell>{prod.manufacturer || '-'}</TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Link href={`/admin/products/${prod.id}/edit`}>
+                      <Button variant="outline" size="sm">{t('products.edit')}</Button>
+                    </Link>
+                    <DeleteButton id={prod.id} />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                   {t('products.no_products')}

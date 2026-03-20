@@ -27,7 +27,7 @@ export default function ProductUploadPage() {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        setPreview(results.data.slice(0, 5)) // show first 5 rows
+        setPreview(results.data.slice(0, 5))
       },
       error: (error) => {
         setResult({ success: false, message: `CSV parse error: ${error.message}` })
@@ -44,7 +44,6 @@ export default function ProductUploadPage() {
     setUploading(true)
     setResult(null)
 
-    // Parse full CSV
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -56,7 +55,6 @@ export default function ProductUploadPage() {
           return
         }
 
-        // Validate required columns (adjust as needed)
         const requiredColumns = ['name', 'type']
         const firstRow = data[0]
         const missing = requiredColumns.filter(col => !(col in firstRow))
@@ -75,7 +73,6 @@ export default function ProductUploadPage() {
           const resultData = await response.json()
           if (!response.ok) throw new Error(resultData.error || 'Upload failed')
           setResult({ success: true, message: resultData.message, count: resultData.count })
-          // Optionally redirect after short delay
           setTimeout(() => router.push('/admin/products'), 2000)
         } catch (error: any) {
           setResult({ success: false, message: error.message })

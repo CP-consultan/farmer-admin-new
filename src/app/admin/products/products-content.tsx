@@ -47,9 +47,14 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
           <h1 className="text-3xl font-bold">{t('products.title')}</h1>
           <p className="text-muted-foreground mt-1">{t('products.description')}</p>
         </div>
-        <Link href="/admin/products/new">
-          <Button>{t('products.add_new')}</Button>
-        </Link>
+        <div className="space-x-2">
+          <Link href="/admin/products/upload">
+            <Button variant="outline">📤 Import CSV</Button>
+          </Link>
+          <Link href="/admin/products/new">
+            <Button>{t('products.add_new')}</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-md border">

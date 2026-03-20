@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DeleteButton } from './delete-button'
+import { useLanguage } from '@/contexts/language-context'
 import { Search } from 'lucide-react'
 
 interface Product {
@@ -30,6 +31,7 @@ interface ProductsContentProps {
 }
 
 export default function ProductsContent({ products, pestCountByProduct, cropCountByProduct }: ProductsContentProps) {
+  const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
 
   const filteredProducts = useMemo(() => {
@@ -43,19 +45,29 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
     )
   }, [products, searchTerm])
 
+  const getPestCountText = (count: number) => {
+    if (count === 1) return t('products.pest_count_singular').replace('{count}', count.toString())
+    return t('products.pest_count_plural').replace('{count}', count.toString())
+  }
+
+  const getCropCountText = (count: number) => {
+    if (count === 1) return t('products.crop_count_singular').replace('{count}', count.toString())
+    return t('products.crop_count_plural').replace('{count}', count.toString())
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Pesticides & Fertilizers</h1>
-          <p className="text-muted-foreground mt-1">Manage agricultural products and their details</p>
+          <h1 className="text-3xl font-bold">{t('products.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('products.description')}</p>
         </div>
         <div className="space-x-2">
           <Link href="/admin/products/upload">
             <Button variant="outline">📤 Import CSV</Button>
           </Link>
           <Link href="/admin/products/new">
-            <Button>+ Add New Product</Button>
+            <Button>{t('products.add_new')}</Button>
           </Link>
         </div>
       </div>
@@ -82,13 +94,13 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Active Ingredient</TableHead>
-              <TableHead>Target Pests</TableHead>
-              <TableHead>Applicable Crops</TableHead>
-              <TableHead>Manufacturer</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t('products.table.name')}</TableHead>
+              <TableHead>{t('products.table.type')}</TableHead>
+              <TableHead>{t('products.table.active_ingredient')}</TableHead>
+              <TableHead>{t('products.table.target_pests')}</TableHead>
+              <TableHead>{t('products.table.applicable_crops')}</TableHead>
+              <TableHead>{t('products.table.manufacturer')}</TableHead>
+              <TableHead className="text-right">{t('products.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,26 +116,28 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
                       {prod.name}
                     </Link>
                   </TableCell>
-                  <TableCell className="capitalize">{prod.type}</TableCell>
+                  <TableCell>
+                    <span className="capitalize">{prod.type}</span>
+                  </TableCell>
                   <TableCell>{prod.active_ingredient || '-'}</TableCell>
                   <TableCell>
                     {pestCountByProduct[prod.id] ? (
-                      <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs">
-                        {pestCountByProduct[prod.id]} pest{pestCountByProduct[prod.id] !== 1 ? 's' : ''}
+                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs">
+                        {getPestCountText(pestCountByProduct[prod.id])}
                       </span>
                     ) : '-'}
                   </TableCell>
                   <TableCell>
                     {cropCountByProduct[prod.id] ? (
-                      <span className="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs">
-                        {cropCountByProduct[prod.id]} crop{cropCountByProduct[prod.id] !== 1 ? 's' : ''}
+                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs">
+                        {getCropCountText(cropCountByProduct[prod.id])}
                       </span>
                     ) : '-'}
                   </TableCell>
                   <TableCell>{prod.manufacturer || '-'}</TableCell>
                   <TableCell className="text-right space-x-2">
                     <Link href={`/admin/products/${prod.id}/edit`}>
-                      <Button variant="outline" size="sm">Edit</Button>
+                      <Button variant="outline" size="sm">{t('products.edit')}</Button>
                     </Link>
                     <DeleteButton id={prod.id} />
                   </TableCell>
@@ -132,7 +146,7 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
             ) : (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                  No products found.
+                  {t('products.no_products')}
                 </TableCell>
               </TableRow>
             )}

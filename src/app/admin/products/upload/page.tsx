@@ -64,20 +64,19 @@ export default function ProductUploadPage() {
         }
 
         try {
-          console.log('Sending products:', data.slice(0, 3)) // log first 3 for debugging
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
           const response = await fetch('/api/products/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ products: data })
+            body: JSON.stringify({ products: data }),
+            signal: controller.signal
           })
-
-          console.log('Response status:', response.status)
+          clearTimeout(timeoutId)
 
           let resultData
           const responseText = await response.text()
-          console.log('Raw response:', responseText)
-
           try {
             resultData = JSON.parse(responseText)
           } catch (e) {
@@ -88,8 +87,11 @@ export default function ProductUploadPage() {
           setResult({ success: true, message: resultData.message, count: resultData.count })
           setTimeout(() => router.push('/admin/products'), 2000)
         } catch (error: any) {
-          console.error('Upload error:', error)
-          setResult({ success: false, message: error.message })
+          if (error.name === 'AbortError') {
+            setResult({ success: false, message: 'Request timed out. Try a smaller file or contact support.' })
+          } else {
+            setResult({ success: false, message: error.message })
+          }
         } finally {
           setUploading(false)
         }

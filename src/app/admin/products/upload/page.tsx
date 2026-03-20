@@ -64,24 +64,31 @@ export default function ProductUploadPage() {
         }
 
         try {
+          console.log('Sending products:', data.slice(0, 3)) // log first 3 for debugging
+
           const response = await fetch('/api/products/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ products: data })
           })
 
+          console.log('Response status:', response.status)
+
           let resultData
           const responseText = await response.text()
+          console.log('Raw response:', responseText)
+
           try {
             resultData = JSON.parse(responseText)
-          } catch {
-            throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`)
+          } catch (e) {
+            throw new Error(`Invalid JSON from server: ${responseText.substring(0, 200)}`)
           }
 
           if (!response.ok) throw new Error(resultData.error || 'Upload failed')
           setResult({ success: true, message: resultData.message, count: resultData.count })
           setTimeout(() => router.push('/admin/products'), 2000)
         } catch (error: any) {
+          console.error('Upload error:', error)
           setResult({ success: false, message: error.message })
         } finally {
           setUploading(false)
@@ -169,7 +176,7 @@ export default function ProductUploadPage() {
                       {Object.keys(preview[0] || {}).map(key => (
                         <th key={key} className="p-2 border text-left">{key}</th>
                       ))}
-                    </tr>
+                     </tr>
                   </thead>
                   <tbody>
                     {preview.map((row, idx) => (

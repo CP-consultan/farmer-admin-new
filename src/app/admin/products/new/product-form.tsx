@@ -157,7 +157,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         const trimmed = selectedIngredient.trim()
         if (!selectedIngredientsRef.current.has(trimmed)) {
           selectedIngredientsRef.current.add(trimmed)
-          setModeOfAction(prev => {
+          setModeOfAction((prev: string) => {
             const newText = prev ? prev + '\n' + data.mode_of_action : data.mode_of_action
             console.log('Setting mode of action:', newText)
             return newText
@@ -448,3 +448,4 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     </form>
   )
 }
+

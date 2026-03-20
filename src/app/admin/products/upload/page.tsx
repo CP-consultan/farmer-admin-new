@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Papa from 'papaparse'
 import { Button } from '@/components/ui/button'
@@ -69,7 +69,15 @@ export default function ProductUploadPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ products: data })
           })
-          const resultData = await response.json()
+
+          let resultData
+          const responseText = await response.text()
+          try {
+            resultData = JSON.parse(responseText)
+          } catch {
+            throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`)
+          }
+
           if (!response.ok) throw new Error(resultData.error || 'Upload failed')
           setResult({ success: true, message: resultData.message, count: resultData.count })
           setTimeout(() => router.push('/admin/products'), 2000)
@@ -161,7 +169,7 @@ export default function ProductUploadPage() {
                       {Object.keys(preview[0] || {}).map(key => (
                         <th key={key} className="p-2 border text-left">{key}</th>
                       ))}
-                     </tr>
+                    </tr>
                   </thead>
                   <tbody>
                     {preview.map((row, idx) => (

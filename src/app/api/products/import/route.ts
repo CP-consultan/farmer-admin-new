@@ -3,24 +3,33 @@ import { createClient } from '@/utils/supabase/server'
 
 export async function POST(request: Request) {
   try {
-    const { products } = await request.json()
+    let products
+    try {
+      const body = await request.json()
+      products = body.products
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: 'Invalid JSON. Please check your request body.' },
+        { status: 400 }
+      )
+    }
+
     if (!Array.isArray(products) || products.length === 0) {
-      return NextResponse.json({ error: 'No products provided' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'No products provided or invalid format' },
+        { status: 400 }
+      )
     }
 
     const supabase = await createClient()
     let inserted = 0
     let updated = 0
 
-    // Process each product
     for (const prod of products) {
-      // Basic validation
       if (!prod.name || !prod.type) {
-        console.warn('Skipping product missing name or type:', prod)
         continue
       }
 
-      // Check if product exists by name (case-insensitive)
       const { data: existing, error: selectError } = await supabase
         .from('agrochemicals')
         .select('id')
@@ -32,7 +41,6 @@ export async function POST(request: Request) {
         continue
       }
 
-      // Prepare data (only columns that exist in table)
       const productData = {
         name: prod.name,
         name_ur: prod.name_ur || null,
@@ -49,7 +57,6 @@ export async function POST(request: Request) {
       }
 
       if (existing) {
-        // Update existing product
         const { error: updateError } = await supabase
           .from('agrochemicals')
           .update(productData)
@@ -57,7 +64,6 @@ export async function POST(request: Request) {
         if (!updateError) updated++
         else console.error('Update error:', updateError)
       } else {
-        // Insert new product
         const { error: insertError } = await supabase
           .from('agrochemicals')
           .insert([productData])
@@ -73,6 +79,9 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('Import API error:', error)
-    return NextResponse.json({ error: error.message || 'Import failed' }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message || 'Import failed' },
+      { status: 500 }
+    )
   }
 }

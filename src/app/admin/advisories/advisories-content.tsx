@@ -62,6 +62,7 @@ export default function AdvisoriesContent({ advisories }: AdvisoriesContentProps
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">{t('table.sr_no')}</TableHead>
               <TableHead>{t('advisories.table.pest')}</TableHead>
               <TableHead>{t('advisories.table.title')}</TableHead>
               <TableHead>{t('advisories.table.title_ur')}</TableHead>
@@ -69,8 +70,9 @@ export default function AdvisoriesContent({ advisories }: AdvisoriesContentProps
             </TableRow>
           </TableHeader>
           <TableBody>
-            {advisories?.map((adv) => (
+            {advisories?.map((adv, idx) => (
               <TableRow key={adv.id}>
+                <TableCell className="text-center">{idx + 1}</TableCell>
                 <TableCell className="font-medium">
                   {adv.pests ? getPestDisplay(adv.pests) : '—'}
                 </TableCell>
@@ -102,7 +104,7 @@ export default function AdvisoriesContent({ advisories }: AdvisoriesContentProps
             ))}
             {(!advisories || advisories.length === 0) && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                   {t('advisories.no_advisories')}
                 </TableCell>
               </TableRow>

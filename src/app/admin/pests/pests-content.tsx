@@ -51,6 +51,7 @@ export default function PestsContent({ pests }: PestsContentProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">{t('table.sr_no')}</TableHead>
               <TableHead>{t('pests.table.scientific_name')}</TableHead>
               <TableHead>{t('pests.table.common_name_en')}</TableHead>
               <TableHead>{t('pests.table.common_name_ur')}</TableHead>
@@ -59,8 +60,9 @@ export default function PestsContent({ pests }: PestsContentProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {pests?.map((pest) => (
+            {pests?.map((pest, idx) => (
               <TableRow key={pest.id}>
+                <TableCell className="text-center">{idx + 1}</TableCell>
                 <TableCell className="font-medium">
                   <Link
                     href={`/admin/pests/${pest.id}`}
@@ -108,7 +110,7 @@ export default function PestsContent({ pests }: PestsContentProps) {
             ))}
             {(!pests || pests.length === 0) && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                   {t('pests.no_pests')}
                 </TableCell>
               </TableRow>

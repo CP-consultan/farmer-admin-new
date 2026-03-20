@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/table'
 import { DeleteButton } from './delete-button'
 import { useLanguage } from '@/contexts/language-context'
-import { useEffect } from 'react'
 
 interface Product {
   id: string
@@ -30,13 +29,6 @@ interface ProductsContentProps {
 
 export default function ProductsContent({ products, pestCountByProduct, cropCountByProduct }: ProductsContentProps) {
   const { t } = useLanguage()
-
-  useEffect(() => {
-    console.log('ProductsContent mounted')
-    console.log('products count:', products?.length)
-    console.log('pestCountByProduct:', pestCountByProduct)
-    console.log('cropCountByProduct:', cropCountByProduct)
-  }, [products, pestCountByProduct, cropCountByProduct])
 
   const getPestCountText = (count: number) => {
     if (count === 1) return t('products.pest_count_singular').replace('{count}', count.toString())
@@ -69,6 +61,7 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">{t('table.sr_no')}</TableHead>
               <TableHead>{t('products.table.name')}</TableHead>
               <TableHead>{t('products.table.type')}</TableHead>
               <TableHead>{t('products.table.active_ingredient')}</TableHead>
@@ -80,8 +73,9 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
           </TableHeader>
           <TableBody>
             {products && products.length > 0 ? (
-              products.map((prod) => (
+              products.map((prod, idx) => (
                 <TableRow key={prod.id}>
+                  <TableCell className="text-center">{idx + 1}</TableCell>
                   <TableCell className="font-medium">
                     <Link
                       href={`/admin/products/${prod.id}`}
@@ -119,7 +113,7 @@ export default function ProductsContent({ products, pestCountByProduct, cropCoun
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                   {t('products.no_products')}
                 </TableCell>
               </TableRow>

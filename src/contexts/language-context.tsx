@@ -53,7 +53,8 @@ const translations = {
     'products.pest_count_plural': '{count} pests',
     'products.crop_count_singular': '{count} crop',
     'products.crop_count_plural': '{count} crops',
-    'products.no_products': 'No products found.',
+    
+    'table.sr_no': 'Sr. No.',
     'products.edit': 'Edit',
 
     'product_form.title_new': 'Add New Product',
@@ -202,7 +203,8 @@ const translations = {
     'products.pest_count_plural': '{count} کیڑے',
     'products.crop_count_singular': '{count} فصل',
     'products.crop_count_plural': '{count} فصلیں',
-    'products.no_products': 'کوئی مصنوعات نہیں ملی',
+    
+    'table.sr_no': 'Sr. No.',
     'products.edit': 'ترمیم',
 
     'product_form.title_new': 'نئی مصنوعہ شامل کریں',
@@ -332,3 +334,4 @@ export function useLanguage() {
   if (!context) throw new Error('useLanguage must be used within LanguageProvider')
   return context
 }
+

@@ -32,7 +32,6 @@ export default function CropsContent({ crops }: CropsContentProps) {
   const { t } = useLanguage()
 
   const refreshPage = () => {
-    // Trigger a re-fetch by updating a state or using router.refresh()
     window.location.reload()
   }
 
@@ -52,6 +51,7 @@ export default function CropsContent({ crops }: CropsContentProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">{t('table.sr_no')}</TableHead>
               <TableHead>{t('crops.table.name')}</TableHead>
               <TableHead>{t('crops.table.name_ur')}</TableHead>
               <TableHead>{t('crops.table.common_name_en')}</TableHead>
@@ -60,8 +60,9 @@ export default function CropsContent({ crops }: CropsContentProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {crops?.map((crop) => (
+            {crops?.map((crop, idx) => (
               <TableRow key={crop.id}>
+                <TableCell className="text-center">{idx + 1}</TableCell>
                 <TableCell className="font-medium">
                   <Link
                     href={`/admin/crops/${crop.id}`}
@@ -109,7 +110,7 @@ export default function CropsContent({ crops }: CropsContentProps) {
             ))}
             {(!crops || crops.length === 0) && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                   {t('crops.no_crops')}
                 </TableCell>
               </TableRow>

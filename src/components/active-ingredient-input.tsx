@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ export default function ActiveIngredientInput({
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState(value)
   const [loading, setLoading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setSearchTerm(value)
@@ -73,8 +74,6 @@ export default function ActiveIngredientInput({
       const data = await response.json()
       if (data.mode_of_action) {
         onModeOfActionFetched?.(data.mode_of_action)
-      } else {
-        console.log('No mode of action returned for', ingredient)
       }
     } catch (error) {
       console.error('Error fetching mode of action:', error)
@@ -93,13 +92,14 @@ export default function ActiveIngredientInput({
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
+            onClick={() => setOpen(true)}
           >
             {value || placeholder}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -109,6 +109,7 @@ export default function ActiveIngredientInput({
           className="w-[--radix-popover-trigger-width] p-0" 
           align="start" 
           sideOffset={5}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <Command>
             <CommandInput
@@ -116,6 +117,7 @@ export default function ActiveIngredientInput({
               value={searchTerm}
               onValueChange={setSearchTerm}
               className="h-9"
+              ref={inputRef}
             />
             <CommandList>
               <CommandEmpty>

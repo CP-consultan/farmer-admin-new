@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Home, Bug, FileText, Upload, Leaf, UserCircle, Package, Sprout, Languages } from 'lucide-react'
 import ClientOnly from '@/components/client-only'
 import { LanguageProvider, useLanguage } from '@/contexts/language-context'
+import { RTLProvider } from '@/components/rtl-provider'
 
 const navigation = [
   { nameKey: 'nav.dashboard', href: '/admin', icon: Home },
@@ -84,7 +85,9 @@ function LayoutContent({ children }: { children: ReactNode }) {
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <LanguageProvider>
-      <LayoutContent>{children}</LayoutContent>
+      <RTLProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </RTLProvider>
     </LanguageProvider>
   )
 }

@@ -117,9 +117,19 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   const router = useRouter()
   const supabase = createClient()
   const selectedIngredientsRef = useRef<Set<string>>(new Set())
-  const overviewTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const overviewEnTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const overviewUrTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const subTypeOptions = type === 'pesticide' ? pesticideSubTypes : fertilizerSubTypes
+
+  // Dynamic label for Target Pests based on sub-type and language
+  const getTargetPestsLabel = () => {
+    if (language !== 'ur') return t('product_form.target_pests')
+    if (subType === 'Insecticide') return 'کیڑے مارنے کی صلاحیت'
+    if (subType === 'Herbicide') return 'جڑی بوٹیوں کو مارنے کی صلاحیت'
+    if (subType === 'Fungicide') return 'بیماری پر قابو پانے کی صلاحیت'
+    return 'ہدف کیڑے'
+  }
 
   const filteredPests = useMemo(() => {
     if (!subType || !subTypeToCategory[subType]) {
@@ -315,36 +325,30 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     }
   }
 
-  // Helper to insert bold markers around selected text
-  const applyBold = () => {
-    const textarea = overviewTextareaRef.current
+  const insertBold = (textareaRef: React.RefObject<HTMLTextAreaElement>, setter: (value: string) => void, currentValue: string) => {
+    const textarea = textareaRef.current
     if (!textarea) return
 
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
-    const selectedText = overview.substring(start, end)
+    const selectedText = currentValue.substring(start, end)
 
-    let newText
+    let newText: string
+    let cursorPos: number
+
     if (selectedText) {
-      // Wrap selected text with **
-      newText = overview.substring(0, start) + '**' + selectedText + '**' + overview.substring(end)
-      // Set cursor after the closing **
-      const newCursorPos = end + 4
-      setOverview(newText)
-      setTimeout(() => {
-        textarea.setSelectionRange(newCursorPos, newCursorPos)
-        textarea.focus()
-      }, 0)
+      newText = currentValue.substring(0, start) + '**' + selectedText + '**' + currentValue.substring(end)
+      cursorPos = end + 4
     } else {
-      // Insert ** at cursor position
-      newText = overview.substring(0, start) + '****' + overview.substring(end)
-      const newCursorPos = start + 2
-      setOverview(newText)
-      setTimeout(() => {
-        textarea.setSelectionRange(newCursorPos, newCursorPos)
-        textarea.focus()
-      }, 0)
+      newText = currentValue.substring(0, start) + '****' + currentValue.substring(end)
+      cursorPos = start + 2
     }
+
+    setter(newText)
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(cursorPos, cursorPos)
+    }, 0)
   }
 
   const getFormSections = () => {
@@ -373,7 +377,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         .filter(p => p)
         .map(p => p!.scientific_name)
         .join(', ')
-      sections.push({ label: t('product_form.target_pests'), value: pestNames })
+      sections.push({ label: getTargetPestsLabel(), value: pestNames })
     }
     if (selectedCrops.length > 0) {
       const cropNames = selectedCrops
@@ -527,7 +531,18 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
             <SelectContent>
               {subTypeOptions.map((opt) => (
                 <SelectItem key={opt} value={opt}>
-                  {opt}
+                  {language === 'ur' && (
+                    opt === 'Herbicide' ? 'جڑی بوٹی مار دوا' :
+                    opt === 'Insecticide' ? 'کیڑے مار دوا' :
+                    opt === 'Fungicide' ? 'پھپھوندی کش' :
+                    opt === 'Bactericide' ? 'بیکٹیریا کش' :
+                    opt === 'Nematicide' ? 'نیماٹوڈ کش' :
+                    opt === 'Rodenticide' ? 'چوہا مار' :
+                    opt === 'Molluscicide' ? 'گھونگھے مار' :
+                    opt === 'Acaricide' ? 'کیڑے (اکاری) کش' :
+                    opt === 'Plant Growth Regulator' ? 'پودوں کی نشوونما ریگولیٹر' :
+                    opt
+                  ) || opt}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -592,21 +607,27 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         <Textarea value={modeOfActionUr} onChange={(e) => setModeOfActionUr(e.target.value)} rows={3} placeholder="Mode of Action (Urdu)" dir="rtl" className="mt-2 urdu-text" />
       </div>
 
-      <MultiSelect
-        label={t('product_form.target_pests')}
-        options={pestOptions}
-        selected={selectedPests}
-        onChange={setSelectedPests}
-        placeholder={t('product_form.select_pests_placeholder')}
-      />
+      <div>
+        <Label>{getTargetPestsLabel()}</Label>
+        <MultiSelect
+          label=""
+          options={pestOptions}
+          selected={selectedPests}
+          onChange={setSelectedPests}
+          placeholder={t('product_form.select_pests_placeholder')}
+        />
+      </div>
 
-      <MultiSelect
-        label={t('product_form.applicable_crops')}
-        options={cropOptions}
-        selected={selectedCrops}
-        onChange={setSelectedCrops}
-        placeholder={t('product_form.select_crops_placeholder')}
-      />
+      <div>
+        <Label>{t('product_form.applicable_crops')}</Label>
+        <MultiSelect
+          label=""
+          options={cropOptions}
+          selected={selectedCrops}
+          onChange={setSelectedCrops}
+          placeholder={t('product_form.select_crops_placeholder')}
+        />
+      </div>
 
       <div>
         <Label>{t('product_form.application_method')}</Label>
@@ -649,7 +670,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         <Input value={manufacturerUr} onChange={(e) => setManufacturerUr(e.target.value)} placeholder="Manufacturer (Urdu)" dir="rtl" className="mt-2 urdu-text" />
       </div>
 
-      {/* New Overview Section with Bold Button */}
       <div>
         <Label>Product Overview / Review (English)</Label>
         <div className="flex gap-2 mb-2">
@@ -657,7 +677,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
             type="button"
             variant="outline"
             size="sm"
-            onClick={applyBold}
+            onClick={() => insertBold(overviewEnTextareaRef, setOverview, overview)}
             className="flex items-center gap-1"
           >
             <Bold className="h-4 w-4" />
@@ -669,7 +689,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         </div>
         <div className="flex gap-2">
           <Textarea
-            ref={overviewTextareaRef}
+            ref={overviewEnTextareaRef}
             value={overview}
             onChange={(e) => setOverview(e.target.value)}
             rows={4}
@@ -691,13 +711,28 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         <p className="text-xs text-muted-foreground mt-1">
           Use **bold** text by wrapping words with ** (or use the Bold button). Example: **important**.
         </p>
+
+        <Label className="mt-4">Product Overview / Review (Urdu)</Label>
+        <div className="flex gap-2 mb-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => insertBold(overviewUrTextareaRef, setOverviewUr, overviewUr)}
+            className="flex items-center gap-1"
+          >
+            <Bold className="h-4 w-4" />
+            Bold
+          </Button>
+        </div>
         <Textarea
+          ref={overviewUrTextareaRef}
           value={overviewUr}
           onChange={(e) => setOverviewUr(e.target.value)}
           rows={4}
           placeholder="Product Overview (Urdu)"
           dir="rtl"
-          className="mt-2 urdu-text"
+          className="urdu-text"
         />
       </div>
 

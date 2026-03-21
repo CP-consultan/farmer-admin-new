@@ -348,7 +348,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       const extractData = await extractRes.json()
       const pages = extractData?.query?.pages
       const page = pages ? Object.values(pages)[0] : null
-      const extract = page?.extract || ''
+      const extract = (page as any)?.extract || ''
       if (extract) {
         setOverview(extract)
       } else {
@@ -795,3 +795,4 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     </form>
   )
 }
+

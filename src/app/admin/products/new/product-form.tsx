@@ -104,6 +104,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
   const [selectedPests, setSelectedPests] = useState<string[]>(initialData?.pests || [])
   const [selectedCrops, setSelectedCrops] = useState<string[]>(initialData?.crops || [])
   const [loading, setLoading] = useState(false)
+  const [fetchingOverview, setFetchingOverview] = useState(false)
   const [translating, setTranslating] = useState({
     name: false,
     activeIngredient: false,
@@ -122,7 +123,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
   const subTypeOptions = type === 'pesticide' ? pesticideSubTypes : fertilizerSubTypes
 
-  // Dynamic label for Target Pests based on sub-type and language
   const getTargetPestsLabel = () => {
     if (language !== 'ur') return t('product_form.target_pests')
     if (subType === 'Insecticide') return 'کیڑے مارنے کی صلاحیت'
@@ -322,6 +322,43 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       alert('Some translations failed. Please try again.')
     } finally {
       setTranslating(prev => ({ ...prev, all: false }))
+    }
+  }
+
+  const fetchFromWikipedia = async () => {
+    if (!name) {
+      alert('Please enter a product name first.')
+      return
+    }
+    setFetchingOverview(true)
+    try {
+      const searchRes = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(name)}&format=json&origin=*`
+      )
+      const searchData = await searchRes.json()
+      const firstTitle = searchData?.query?.search?.[0]?.title
+      if (!firstTitle) {
+        alert('No Wikipedia article found for that product name.')
+        setFetchingOverview(false)
+        return
+      }
+      const extractRes = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(firstTitle)}&format=json&origin=*`
+      )
+      const extractData = await extractRes.json()
+      const pages = extractData?.query?.pages
+      const page = pages ? Object.values(pages)[0] : null
+      const extract = page?.extract || ''
+      if (extract) {
+        setOverview(extract)
+      } else {
+        alert('No extract found.')
+      }
+    } catch (error) {
+      console.error(error)
+      alert('Failed to fetch from Wikipedia. Check console for details.')
+    } finally {
+      setFetchingOverview(false)
     }
   }
 
@@ -696,20 +733,33 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
             className="flex-1"
             placeholder="Write a brief overview, benefits, usage notes, or review for this product..."
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => handleTranslate('overview')}
-            disabled={!overview.trim() || translating.overview}
-            className="self-start"
-          >
-            {translating.overview ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
-            <span className="ml-2 hidden sm:inline">Urdu</span>
-          </Button>
+          <div className="flex flex-col gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleTranslate('overview')}
+              disabled={!overview.trim() || translating.overview}
+              className="whitespace-nowrap"
+            >
+              {translating.overview ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+              <span className="ml-1">Urdu</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={fetchFromWikipedia}
+              disabled={fetchingOverview || !name}
+              className="whitespace-nowrap"
+            >
+              {fetchingOverview ? <Loader2 className="h-4 w-4 animate-spin" /> : '📖'}
+              <span className="ml-1">Wikipedia</span>
+            </Button>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          Use **bold** text by wrapping words with ** (or use the Bold button). Example: **important**.
+          Use **bold** text by wrapping words with ** (or use the Bold button). Example: **important**. Click Wikipedia to fetch an article.
         </p>
 
         <Label className="mt-4">Product Overview / Review (Urdu)</Label>

@@ -12,6 +12,7 @@ import { MultiSelect } from '@/components/multi-select'
 import { ReadFormButton } from '@/components/read-form-button'
 import ActiveIngredientInput from '@/components/active-ingredient-input'
 import { useLanguage } from '@/contexts/language-context'
+import { Loader2, Bold } from 'lucide-react'
 
 interface Pest {
   id: string
@@ -83,18 +84,40 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     }
     return ['']
   })
+  const [activeIngredientsUr, setActiveIngredientsUr] = useState<string[]>(() => {
+    if (initialData?.active_ingredient_ur) {
+      return initialData.active_ingredient_ur.split('\n').filter((line: string) => line.trim() !== '')
+    }
+    return ['']
+  })
   const [modeOfAction, setModeOfAction] = useState(initialData?.mode_of_action || '')
+  const [modeOfActionUr, setModeOfActionUr] = useState(initialData?.mode_of_action_ur || '')
   const [applicationMethod, setApplicationMethod] = useState(initialData?.application_method || '')
+  const [applicationMethodUr, setApplicationMethodUr] = useState(initialData?.application_method_ur || '')
   const [dosage, setDosage] = useState(initialData?.dosage || '')
   const [safetyInfo, setSafetyInfo] = useState(initialData?.safety_info || '')
+  const [safetyInfoUr, setSafetyInfoUr] = useState(initialData?.safety_info_ur || '')
   const [manufacturer, setManufacturer] = useState(initialData?.manufacturer || '')
+  const [manufacturerUr, setManufacturerUr] = useState(initialData?.manufacturer_ur || '')
+  const [overview, setOverview] = useState(initialData?.overview || '')
+  const [overviewUr, setOverviewUr] = useState(initialData?.overview_ur || '')
   const [selectedPests, setSelectedPests] = useState<string[]>(initialData?.pests || [])
   const [selectedCrops, setSelectedCrops] = useState<string[]>(initialData?.crops || [])
   const [loading, setLoading] = useState(false)
+  const [translating, setTranslating] = useState({
+    name: false,
+    activeIngredient: false,
+    modeOfAction: false,
+    applicationMethod: false,
+    safetyInfo: false,
+    manufacturer: false,
+    overview: false,
+    all: false
+  })
   const router = useRouter()
   const supabase = createClient()
-
   const selectedIngredientsRef = useRef<Set<string>>(new Set())
+  const overviewTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const subTypeOptions = type === 'pesticide' ? pesticideSubTypes : fertilizerSubTypes
 
@@ -120,12 +143,15 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
   const addActiveIngredientLine = () => {
     setActiveIngredients([...activeIngredients, ''])
+    setActiveIngredientsUr([...activeIngredientsUr, ''])
   }
 
   const removeActiveIngredientLine = (index: number) => {
     const ingredientToRemove = activeIngredients[index]
     const newLines = activeIngredients.filter((_, i) => i !== index)
     setActiveIngredients(newLines.length ? newLines : [''])
+    const newLinesUr = activeIngredientsUr.filter((_, i) => i !== index)
+    setActiveIngredientsUr(newLinesUr.length ? newLinesUr : [''])
     if (ingredientToRemove && ingredientToRemove.trim() !== '') {
       selectedIngredientsRef.current.delete(ingredientToRemove.trim())
     }
@@ -141,32 +167,183 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     }
   }
 
+  const updateActiveIngredientUrLine = (index: number, value: string) => {
+    const newLines = [...activeIngredientsUr]
+    newLines[index] = value
+    setActiveIngredientsUr(newLines)
+  }
+
   const getCombinedActiveIngredient = () => {
     return activeIngredients.filter(line => line.trim() !== '').join('\n')
   }
 
-  const handleIngredientSelect = async (index: number, selectedIngredient: string) => {
-    console.log('handleIngredientSelect', index, selectedIngredient)
-    updateActiveIngredientLine(index, selectedIngredient)
+  const getCombinedActiveIngredientUr = () => {
+    return activeIngredientsUr.filter(line => line.trim() !== '').join('\n')
+  }
 
+  const handleIngredientSelect = async (index: number, selectedIngredient: string) => {
+    updateActiveIngredientLine(index, selectedIngredient)
     try {
       const response = await fetch(`/api/mode-of-action?ingredient=${encodeURIComponent(selectedIngredient)}`)
       const data = await response.json()
-      console.log('Mode of action response:', data)
       if (data.mode_of_action) {
         const trimmed = selectedIngredient.trim()
         if (!selectedIngredientsRef.current.has(trimmed)) {
           selectedIngredientsRef.current.add(trimmed)
-          setModeOfAction((prev: string) => {
+          setModeOfAction(prev => {
             const newText = prev ? prev + '\n' + data.mode_of_action : data.mode_of_action
-            console.log('Setting mode of action:', newText)
             return newText
           })
         }
       }
     } catch (error) {
       console.error('Error fetching mode of action:', error)
-      alert('Failed to fetch mode of action. Check console.')
+    }
+  }
+
+  const handleTranslate = async (field: 'name' | 'activeIngredient' | 'modeOfAction' | 'applicationMethod' | 'safetyInfo' | 'manufacturer' | 'overview') => {
+    let sourceText = ''
+    let targetSetter: (value: string) => void
+
+    switch (field) {
+      case 'name':
+        sourceText = name
+        targetSetter = setNameUr
+        break
+      case 'activeIngredient':
+        sourceText = getCombinedActiveIngredient()
+        targetSetter = (val) => {
+          const lines = val.split('\n').filter(l => l.trim() !== '')
+          setActiveIngredientsUr(lines.length ? lines : [''])
+        }
+        break
+      case 'modeOfAction':
+        sourceText = modeOfAction
+        targetSetter = setModeOfActionUr
+        break
+      case 'applicationMethod':
+        sourceText = applicationMethod
+        targetSetter = setApplicationMethodUr
+        break
+      case 'safetyInfo':
+        sourceText = safetyInfo
+        targetSetter = setSafetyInfoUr
+        break
+      case 'manufacturer':
+        sourceText = manufacturer
+        targetSetter = setManufacturerUr
+        break
+      case 'overview':
+        sourceText = overview
+        targetSetter = setOverviewUr
+        break
+      default:
+        return
+    }
+
+    if (!sourceText.trim()) {
+      alert('No text to translate.')
+      return
+    }
+
+    setTranslating(prev => ({ ...prev, [field]: true }))
+
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: sourceText })
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Translation failed')
+      targetSetter(data.translatedText)
+    } catch (error) {
+      console.error('Translation error:', error)
+      alert('Translation failed. Please try again.')
+    } finally {
+      setTranslating(prev => ({ ...prev, [field]: false }))
+    }
+  }
+
+  const handleTranslateAll = async () => {
+    setTranslating(prev => ({ ...prev, all: true }))
+    try {
+      if (name.trim()) {
+        const res1 = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: name }) })
+        const data1 = await res1.json()
+        if (data1.translatedText) setNameUr(data1.translatedText)
+      }
+      const combined = getCombinedActiveIngredient()
+      if (combined.trim()) {
+        const res2 = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: combined }) })
+        const data2 = await res2.json()
+        if (data2.translatedText) {
+          const lines = data2.translatedText.split('\n').filter(l => l.trim() !== '')
+          setActiveIngredientsUr(lines.length ? lines : [''])
+        }
+      }
+      if (modeOfAction.trim()) {
+        const res3 = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: modeOfAction }) })
+        const data3 = await res3.json()
+        if (data3.translatedText) setModeOfActionUr(data3.translatedText)
+      }
+      if (applicationMethod.trim()) {
+        const res4 = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: applicationMethod }) })
+        const data4 = await res4.json()
+        if (data4.translatedText) setApplicationMethodUr(data4.translatedText)
+      }
+      if (safetyInfo.trim()) {
+        const res5 = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: safetyInfo }) })
+        const data5 = await res5.json()
+        if (data5.translatedText) setSafetyInfoUr(data5.translatedText)
+      }
+      if (manufacturer.trim()) {
+        const res6 = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: manufacturer }) })
+        const data6 = await res6.json()
+        if (data6.translatedText) setManufacturerUr(data6.translatedText)
+      }
+      if (overview.trim()) {
+        const res7 = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: overview }) })
+        const data7 = await res7.json()
+        if (data7.translatedText) setOverviewUr(data7.translatedText)
+      }
+    } catch (error) {
+      console.error('Translation error:', error)
+      alert('Some translations failed. Please try again.')
+    } finally {
+      setTranslating(prev => ({ ...prev, all: false }))
+    }
+  }
+
+  // Helper to insert bold markers around selected text
+  const applyBold = () => {
+    const textarea = overviewTextareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = overview.substring(start, end)
+
+    let newText
+    if (selectedText) {
+      // Wrap selected text with **
+      newText = overview.substring(0, start) + '**' + selectedText + '**' + overview.substring(end)
+      // Set cursor after the closing **
+      const newCursorPos = end + 4
+      setOverview(newText)
+      setTimeout(() => {
+        textarea.setSelectionRange(newCursorPos, newCursorPos)
+        textarea.focus()
+      }, 0)
+    } else {
+      // Insert ** at cursor position
+      newText = overview.substring(0, start) + '****' + overview.substring(end)
+      const newCursorPos = start + 2
+      setOverview(newText)
+      setTimeout(() => {
+        textarea.setSelectionRange(newCursorPos, newCursorPos)
+        textarea.focus()
+      }, 0)
     }
   }
 
@@ -177,11 +354,18 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       { label: t('product_form.type'), value: type },
       { label: t('product_form.subtype'), value: subType },
       { label: t('product_form.active_ingredient'), value: getCombinedActiveIngredient() },
+      { label: 'Active Ingredient (Urdu)', value: getCombinedActiveIngredientUr() },
       { label: t('product_form.mode_of_action'), value: modeOfAction },
+      { label: 'Mode of Action (Urdu)', value: modeOfActionUr },
       { label: t('product_form.application_method'), value: applicationMethod },
+      { label: 'Application Method (Urdu)', value: applicationMethodUr },
       { label: t('product_form.dosage'), value: dosage },
       { label: t('product_form.safety_info'), value: safetyInfo },
+      { label: 'Safety Info (Urdu)', value: safetyInfoUr },
       { label: t('product_form.manufacturer'), value: manufacturer },
+      { label: 'Manufacturer (Urdu)', value: manufacturerUr },
+      { label: 'Product Overview / Review', value: overview },
+      { label: 'Product Overview (Urdu)', value: overviewUr },
     ]
     if (selectedPests.length > 0) {
       const pestNames = selectedPests
@@ -212,11 +396,18 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       type,
       sub_type: subType || null,
       active_ingredient: getCombinedActiveIngredient() || null,
+      active_ingredient_ur: getCombinedActiveIngredientUr() || null,
       mode_of_action: modeOfAction || null,
+      mode_of_action_ur: modeOfActionUr || null,
       application_method: applicationMethod || null,
+      application_method_ur: applicationMethodUr || null,
       dosage: dosage || null,
       safety_info: safetyInfo || null,
+      safety_info_ur: safetyInfoUr || null,
       manufacturer: manufacturer || null,
+      manufacturer_ur: manufacturerUr || null,
+      overview: overview || null,
+      overview_ur: overviewUr || null,
     }
 
     try {
@@ -292,17 +483,25 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         <h2 className="text-2xl font-bold">
           {initialData ? t('product_form.title_edit') : t('product_form.title_new')}
         </h2>
-        <ReadFormButton sections={getFormSections()} />
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={handleTranslateAll} disabled={translating.all}>
+            {translating.all ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : '🌐'}
+            Translate All to Urdu
+          </Button>
+          <ReadFormButton sections={getFormSections()} />
+        </div>
       </div>
 
       <div>
         <Label>{t('product_form.product_name')}</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required />
-      </div>
-
-      <div>
-        <Label>Product Name (Urdu)</Label>
-        <Input value={nameUr} onChange={(e) => setNameUr(e.target.value)} />
+        <div className="flex gap-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} required className="flex-1" />
+          <Button type="button" variant="outline" size="sm" onClick={() => handleTranslate('name')} disabled={!name.trim() || translating.name}>
+            {translating.name ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
+        <Input value={nameUr} onChange={(e) => setNameUr(e.target.value)} placeholder="Product Name (Urdu)" dir="rtl" className="mt-2 urdu-text" />
       </div>
 
       <div>
@@ -345,47 +544,52 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
                 value={line}
                 onChange={(newValue) => updateActiveIngredientLine(index, newValue)}
                 onSelect={(selected) => handleIngredientSelect(index, selected)}
-                onModeOfActionFetched={() => {}} // disable internal fetch
+                onModeOfActionFetched={() => {}}
                 label={`Active Ingredient ${index + 1}`}
                 placeholder={`Search active ingredient ${index + 1}...`}
                 category={subType}
               />
             </div>
             {activeIngredients.length > 1 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeActiveIngredientLine(index)}
-                className="mt-8 text-red-500"
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => removeActiveIngredientLine(index)} className="mt-8 text-red-500">
                 ✕
               </Button>
             )}
           </div>
         ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addActiveIngredientLine}
-          className="mt-2"
-        >
-          + Add another active ingredient
-        </Button>
-        <p className="text-xs text-muted-foreground">
-          Each active ingredient has autocomplete. Selecting a new ingredient will append its mode of action.
-        </p>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={addActiveIngredientLine} className="mt-2">
+            + Add another active ingredient
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => handleTranslate('activeIngredient')} disabled={!getCombinedActiveIngredient().trim() || translating.activeIngredient} className="mt-2">
+            {translating.activeIngredient ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : '🔄'}
+            Translate to Urdu
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {activeIngredientsUr.map((line, idx) => (
+            <Input
+              key={idx}
+              value={line}
+              onChange={(e) => updateActiveIngredientUrLine(idx, e.target.value)}
+              placeholder={`Active Ingredient ${idx + 1} (Urdu)`}
+              dir="rtl"
+              className="urdu-text"
+            />
+          ))}
+        </div>
       </div>
 
       <div>
         <Label>{t('product_form.mode_of_action')}</Label>
-        <Textarea
-          value={modeOfAction}
-          onChange={(e) => setModeOfAction(e.target.value)}
-          rows={3}
-          placeholder="Mode of action will be appended for each new ingredient."
-        />
+        <div className="flex gap-2">
+          <Textarea value={modeOfAction} onChange={(e) => setModeOfAction(e.target.value)} rows={3} className="flex-1" />
+          <Button type="button" variant="outline" size="sm" onClick={() => handleTranslate('modeOfAction')} disabled={!modeOfAction.trim() || translating.modeOfAction} className="self-start">
+            {translating.modeOfAction ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
+        <Textarea value={modeOfActionUr} onChange={(e) => setModeOfActionUr(e.target.value)} rows={3} placeholder="Mode of Action (Urdu)" dir="rtl" className="mt-2 urdu-text" />
       </div>
 
       <MultiSelect
@@ -406,36 +610,94 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
 
       <div>
         <Label>{t('product_form.application_method')}</Label>
-        <Textarea
-          value={applicationMethod}
-          onChange={(e) => setApplicationMethod(e.target.value)}
-          rows={2}
-        />
+        <div className="flex gap-2">
+          <Textarea value={applicationMethod} onChange={(e) => setApplicationMethod(e.target.value)} rows={2} className="flex-1" />
+          <Button type="button" variant="outline" size="sm" onClick={() => handleTranslate('applicationMethod')} disabled={!applicationMethod.trim() || translating.applicationMethod} className="self-start">
+            {translating.applicationMethod ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
+        <Textarea value={applicationMethodUr} onChange={(e) => setApplicationMethodUr(e.target.value)} rows={2} placeholder="Application Method (Urdu)" dir="rtl" className="mt-2 urdu-text" />
       </div>
 
       <div>
         <Label>{t('product_form.dosage')}</Label>
-        <Input
-          value={dosage}
-          onChange={(e) => setDosage(e.target.value)}
-          placeholder={t('product_form.dosage_placeholder')}
-        />
+        <Input value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder={t('product_form.dosage_placeholder')} />
       </div>
 
       <div>
         <Label>{t('product_form.safety_info')}</Label>
-        <Textarea
-          value={safetyInfo}
-          onChange={(e) => setSafetyInfo(e.target.value)}
-          rows={2}
-        />
+        <div className="flex gap-2">
+          <Textarea value={safetyInfo} onChange={(e) => setSafetyInfo(e.target.value)} rows={2} className="flex-1" />
+          <Button type="button" variant="outline" size="sm" onClick={() => handleTranslate('safetyInfo')} disabled={!safetyInfo.trim() || translating.safetyInfo} className="self-start">
+            {translating.safetyInfo ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
+        <Textarea value={safetyInfoUr} onChange={(e) => setSafetyInfoUr(e.target.value)} rows={2} placeholder="Safety Info (Urdu)" dir="rtl" className="mt-2 urdu-text" />
       </div>
 
       <div>
         <Label>{t('product_form.manufacturer')}</Label>
-        <Input
-          value={manufacturer}
-          onChange={(e) => setManufacturer(e.target.value)}
+        <div className="flex gap-2">
+          <Input value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} className="flex-1" />
+          <Button type="button" variant="outline" size="sm" onClick={() => handleTranslate('manufacturer')} disabled={!manufacturer.trim() || translating.manufacturer}>
+            {translating.manufacturer ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
+        <Input value={manufacturerUr} onChange={(e) => setManufacturerUr(e.target.value)} placeholder="Manufacturer (Urdu)" dir="rtl" className="mt-2 urdu-text" />
+      </div>
+
+      {/* New Overview Section with Bold Button */}
+      <div>
+        <Label>Product Overview / Review (English)</Label>
+        <div className="flex gap-2 mb-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={applyBold}
+            className="flex items-center gap-1"
+          >
+            <Bold className="h-4 w-4" />
+            Bold
+          </Button>
+          <span className="text-xs text-muted-foreground self-center">
+            Select text and click Bold, or click to insert ** at cursor.
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <Textarea
+            ref={overviewTextareaRef}
+            value={overview}
+            onChange={(e) => setOverview(e.target.value)}
+            rows={4}
+            className="flex-1"
+            placeholder="Write a brief overview, benefits, usage notes, or review for this product..."
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleTranslate('overview')}
+            disabled={!overview.trim() || translating.overview}
+            className="self-start"
+          >
+            {translating.overview ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'}
+            <span className="ml-2 hidden sm:inline">Urdu</span>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Use **bold** text by wrapping words with ** (or use the Bold button). Example: **important**.
+        </p>
+        <Textarea
+          value={overviewUr}
+          onChange={(e) => setOverviewUr(e.target.value)}
+          rows={4}
+          placeholder="Product Overview (Urdu)"
+          dir="rtl"
+          className="mt-2 urdu-text"
         />
       </div>
 
@@ -448,4 +710,3 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     </form>
   )
 }
-

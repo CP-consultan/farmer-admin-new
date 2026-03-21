@@ -325,7 +325,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     }
   }
 
-  const insertBold = (textareaRef: React.RefObject<HTMLTextAreaElement>, setter: (value: string) => void, currentValue: string) => {
+  const insertBold = (textareaRef: React.RefObject<HTMLTextAreaElement | null>, setter: (value: string) => void, currentValue: string) => {
     const textarea = textareaRef.current
     if (!textarea) return
 

@@ -223,7 +223,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
       case 'activeIngredient':
         sourceText = getCombinedActiveIngredient()
         targetSetter = (val) => {
-          const lines = val.split('\n').filter(l => l.trim() !== '')
+          const lines = val.split('\n').filter((l: string) => l.trim() !== ')
           setActiveIngredientsUr(lines.length ? lines : [''])
         }
         break
@@ -288,7 +288,7 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
         const res2 = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: combined }) })
         const data2 = await res2.json()
         if (data2.translatedText) {
-          const lines = data2.translatedText.split('\n').filter(l => l.trim() !== '')
+          const lines = data2.translatedText.split('\n').filter((l: string) => l.trim() !== ')
           setActiveIngredientsUr(lines.length ? lines : [''])
         }
       }
@@ -745,5 +745,6 @@ export default function ProductForm({ pests, crops, initialData }: ProductFormPr
     </form>
   )
 }
+
 
 

@@ -21,7 +21,8 @@ const translations = {
     'nav.advisories': 'Advisories',
     'nav.products': 'Products',
     'nav.crops': 'Crops',
-    'nav.import': 'Import CSV',
+    '',
+    'nav.ads': 'Ads',
     'language.toggle': 'اردو',
 
     // Product (existing)
@@ -176,7 +177,8 @@ const translations = {
     'nav.advisories': 'مشورے',
     'nav.products': 'پروڈکٹ',
     'nav.crops': 'فصلیں',
-    'nav.import': 'CSV درآمد کریں',
+    '',
+    'nav.ads': 'Ads',
     'language.toggle': 'English',
 
     // Product (same as before, add Urdu translations)
@@ -344,3 +346,5 @@ export function useLanguage() {
   if (!context) throw new Error('useLanguage must be used within LanguageProvider')
   return context
 }
+
+

@@ -16,7 +16,8 @@ const navigation = [
   { nameKey: 'nav.advisories', href: '/admin/advisories', icon: FileText },
   { nameKey: 'nav.products', href: '/admin/products', icon: Package },
   { nameKey: 'nav.crops', href: '/admin/crops', icon: Sprout },
-  { nameKey: 'nav.import', href: '/admin/import', icon: Upload },
+  { nameKey: '
+  { nameKey: 'nav.ads', href: '/admin/ads', icon: FileText }, },
 ]
 
 function LayoutContent({ children }: { children: ReactNode }) {
@@ -91,3 +92,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     </LanguageProvider>
   )
 }
+
+
+
